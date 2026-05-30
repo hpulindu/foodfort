@@ -1,0 +1,144 @@
+export type MenuItem = {
+  name: string;
+  description?: string;
+  price: string;
+  badge?: "chef" | "veg";
+};
+
+export type MenuSection = {
+  id: string;
+  number: string;
+  title: string;
+  subtitle?: string;
+  items: MenuItem[];
+};
+
+export const menu: MenuSection[] = [
+  {
+    id: "pizzas",
+    number: "01",
+    title: "Pizzas",
+    subtitle: "12 inch · fresh dough · premium toppings",
+    items: [
+      { name: "Margherita", description: "Nap sauce, cheese, basil leaves, olive oil, tomato", price: "20.00", badge: "veg" },
+      { name: "Veggie Supreme", description: "Nap sauce, cheese, capsicum, onion, olives, mushroom, corn or pineapple", price: "22.00", badge: "veg" },
+      { name: "Paneer Tikka", description: "Tikka sauce, cheese, paneer, onion, capsicum, coriander", price: "22.00", badge: "veg" },
+      { name: "BBQ Chicken", description: "BBQ sauce, cheese, onion, marinated chicken", price: "24.00" },
+      { name: "Peri Peri Chicken", description: "Peri chicken, cheese, onion, capsicum", price: "24.00" },
+      { name: "Beef Pepperoni", description: "Nap sauce, cheese, beef pepperoni", price: "26.00" },
+      { name: "Beef Supreme", description: "Nap sauce, cheese, beef pepperoni, onion, olives, minced beef", price: "26.00", badge: "chef" },
+      { name: "Butter Chicken", description: "Butter chicken sauce, cheese, onion, chicken, tomato, goat cheese", price: "24.00", badge: "chef" },
+    ],
+  },
+  {
+    id: "kebabs",
+    number: "02",
+    title: "Kebabs",
+    items: [
+      { name: "Zinger Chicken Kebab", price: "14.99" },
+      { name: "Chicken Kebab", price: "16.00" },
+      { name: "Doner Kebab", price: "18.00" },
+      { name: "Mixed Kebab", price: "19.00", badge: "chef" },
+    ],
+  },
+  {
+    id: "gozleme",
+    number: "03",
+    title: "Gozleme",
+    items: [
+      { name: "Chicken Gozleme", price: "19.00" },
+      { name: "Doner Gozleme", price: "20.00" },
+    ],
+  },
+  {
+    id: "burgers",
+    number: "04",
+    title: "Burgers & Tacos",
+    items: [
+      { name: "Smashed Chicken Burger", price: "18.00" },
+      { name: "Smashed Beef Burger", price: "24.00", badge: "chef" },
+      { name: "Chicken Taco", price: "15.00" },
+      { name: "Beef Taco", price: "17.00" },
+      { name: "Veggie Taco", price: "12.00", badge: "veg" },
+    ],
+  },
+  {
+    id: "fries",
+    number: "05",
+    title: "Fries",
+    items: [
+      { name: "Peri Peri Fries — Small", price: "8.00" },
+      { name: "Peri Peri Fries — Large", price: "10.00" },
+      { name: "Chicken Loaded Fries", price: "16.99" },
+      { name: "Cheese Loaded Fries", price: "12.99", badge: "veg" },
+    ],
+  },
+  {
+    id: "kids",
+    number: "06",
+    title: "Kids Menu",
+    items: [
+      { name: "Kids Pizza", price: "10.00" },
+      { name: "Kids Nuggets & Chips", price: "10.00" },
+    ],
+  },
+  {
+    id: "drinks",
+    number: "07",
+    title: "Drinks",
+    items: [
+      { name: "Water", price: "2.99" },
+      { name: "Soft Drink Can", price: "4.00" },
+      { name: "Soft Drink 600ml", price: "5.50" },
+    ],
+  },
+  {
+    id: "desserts",
+    number: "08",
+    title: "Desserts",
+    items: [
+      { name: "Hot Brownie with Ice-Cream", price: "8.00" },
+      { name: "Baklava", description: "per piece", price: "2.00" },
+    ],
+  },
+  {
+    id: "combos",
+    number: "09",
+    title: "Combos",
+    items: [
+      { name: "Large Fries + 600ml Soft Drink", price: "10.00" },
+      { name: "Small Fries + Soft Drink Can", price: "8.00" },
+    ],
+  },
+  {
+    id: "extras",
+    number: "10",
+    title: "Extras",
+    items: [
+      { name: "Double Meat", price: "4.00" },
+      { name: "Extra Cheese", price: "2.00" },
+      { name: "Egg", price: "2.00" },
+      { name: "Extra Add On", price: "3.00" },
+    ],
+  },
+];
+
+export const sauces = [
+  "Sour Cream", "Sweet Chilli", "Hot Chilli", "Garlic",
+  "BBQ", "Satay", "Tomato", "Hummus",
+];
+
+export const restaurant = {
+  name: "Food Fort",
+  tagline: "Hunger Ends Here",
+  phone: "08 9921 5295",
+  phoneHref: "tel:+61899215295",
+  email: "Ask@foodfort.com.au",
+  address: "Shop 6/429 Chapman Rd, Bluff Point WA 6530",
+  mapsUrl: "https://maps.google.com/?q=Shop+6%2F429+Chapman+Rd%2C+Bluff+Point+WA+6530",
+  hours: [
+    { day: "Mon – Thu", time: "11:00 — 21:00" },
+    { day: "Fri – Sat", time: "11:00 — 22:00" },
+    { day: "Sunday", time: "12:00 — 21:00" },
+  ],
+};
