@@ -63,8 +63,21 @@ export const menu: MenuSection[] = [
     ],
   },
   {
-    id: "fries",
+    id: "salads",
     number: "05",
+    title: "Salads",
+    items: [
+      { name: "Mediterranean Salad", price: "8.00", badge: "veg" },
+      { name: "Chicken Avocado Salad", price: "13.00" },
+      { name: "Greek Salad", price: "6.00", badge: "veg" },
+      { name: "Chicken Caesar Salad", price: "14.00" },
+      { name: "Coleslaw", price: "3.00", badge: "veg" },
+      { name: "Egg Salad", price: "6.00", badge: "veg" },
+    ],
+  },
+  {
+    id: "fries",
+    number: "06",
     title: "Fries",
     items: [
       { name: "Peri Peri Fries — Small", price: "8.00" },
@@ -75,7 +88,7 @@ export const menu: MenuSection[] = [
   },
   {
     id: "kids",
-    number: "06",
+    number: "07",
     title: "Kids Menu",
     items: [
       { name: "Kids Pizza", price: "10.00" },
@@ -84,7 +97,7 @@ export const menu: MenuSection[] = [
   },
   {
     id: "drinks",
-    number: "07",
+    number: "08",
     title: "Drinks",
     items: [
       { name: "Water", price: "2.99" },
@@ -94,7 +107,7 @@ export const menu: MenuSection[] = [
   },
   {
     id: "desserts",
-    number: "08",
+    number: "09",
     title: "Desserts",
     items: [
       { name: "Hot Brownie with Ice-Cream", price: "8.00" },
@@ -103,7 +116,7 @@ export const menu: MenuSection[] = [
   },
   {
     id: "combos",
-    number: "09",
+    number: "10",
     title: "Combos",
     items: [
       { name: "Large Fries + 600ml Soft Drink", price: "10.00" },
@@ -112,7 +125,7 @@ export const menu: MenuSection[] = [
   },
   {
     id: "extras",
-    number: "10",
+    number: "11",
     title: "Extras",
     items: [
       { name: "Double Meat", price: "4.00" },
