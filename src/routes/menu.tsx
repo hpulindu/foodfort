@@ -99,7 +99,7 @@ function MenuPage() {
           {/* Sauces */}
           <section id="sauces" className="scroll-mt-40">
             <header className="flex items-baseline gap-6 mb-12">
-              <span className="font-display text-3xl text-[var(--gold)]">11</span>
+              <span className="font-display text-3xl text-[var(--gold)]">12</span>
               <h2 className="font-display text-[clamp(2rem,4vw,3rem)] text-[var(--forest-deep)]">Sauces</h2>
             </header>
             <div className="flex flex-wrap gap-x-6 gap-y-3 font-display text-lg lg:text-xl text-[var(--forest-deep)]">
