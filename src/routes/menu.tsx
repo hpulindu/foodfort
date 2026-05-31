@@ -37,8 +37,7 @@ function MenuPage() {
           </h1>
           <Ornament className="w-48 mx-auto text-[var(--gold)] mt-10" />
           <p className="mt-8 max-w-xl mx-auto text-[var(--cream)]/70 leading-relaxed">
-            100% halal ingredients. Freshly prepared each day in Bluff Point.
-            All prices in AUD.
+            100% halal ingredients. Freshly prepared every day.
           </p>
         </div>
       </section>

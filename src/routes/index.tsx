@@ -3,10 +3,10 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import heroPizza from "@/assets/hero-pizza.jpg";
-import dishBurger from "@/assets/dish-burger.jpg";
 import dishKebab from "@/assets/dish-kebab.jpg";
 import dishFries from "@/assets/dish-fries.jpg";
-import dishGozleme from "@/assets/dish-gozleme.jpg";
+import bbqPizza from "@/assets/BBQ pizza img.png";
+import smashedBurger from "@/assets/Smashed Beef Burger.png";
 import { restaurant } from "@/lib/menu-data";
 
 export const Route = createFileRoute("/")({
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/")({
 });
 
 const signatures = [
-  { name: "BBQ Chicken Pizza", price: "24", image: heroPizza, blurb: "Slow-marinated chicken, smoky BBQ, blistered crust." },
-  { name: "Smashed Beef Burger", price: "24", image: dishBurger, blurb: "Aged beef, melted cheese, caramelised onion on brioche." },
+  { name: "BBQ Chicken Pizza", price: "24", image: bbqPizza, blurb: "Slow-marinated chicken, smoky BBQ, blistered crust." },
+  { name: "Smashed Beef Burger", price: "24", image: smashedBurger, blurb: "Aged beef, melted cheese, caramelised onion on brioche." },
   { name: "Mixed Kebab", price: "19", image: dishKebab, blurb: "Doner and chicken, fresh herbs, warm flatbread." },
   { name: "Chicken Loaded Fries", price: "16.99", image: dishFries, blurb: "Crisp fries, peri chicken, molten cheese." },
 ];
@@ -165,7 +165,7 @@ function HomePage() {
         <div className="mx-auto max-w-7xl grid lg:grid-cols-12 gap-12 lg:gap-20 items-center">
           <div className="lg:col-span-6 relative">
             <div className="aspect-[4/5] overflow-hidden">
-              <img src={dishGozleme} alt="Hand-rolled gozleme on the griddle" loading="lazy" className="w-full h-full object-cover" />
+              <img src={smashedBurger} alt="Smashed beef burger on brioche" loading="lazy" className="w-full h-full object-cover" />
             </div>
             <div className="hidden lg:block absolute -bottom-12 -right-12 w-64 aspect-square overflow-hidden border-8 border-[var(--cream)]">
               <img src={dishKebab} alt="" loading="lazy" className="w-full h-full object-cover" />

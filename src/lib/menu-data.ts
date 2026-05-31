@@ -150,8 +150,8 @@ export const restaurant = {
   address: "Shop 6/429 Chapman Rd, Bluff Point WA 6530",
   mapsUrl: "https://maps.google.com/?q=Shop+6%2F429+Chapman+Rd%2C+Bluff+Point+WA+6530",
   hours: [
-    { day: "Mon – Thu", time: "11:00 — 21:00" },
-    { day: "Fri – Sat", time: "11:00 — 22:00" },
-    { day: "Sunday", time: "12:00 — 21:00" },
+    { day: "Monday", time: "Closed" },
+    { day: "Tuesday", time: "15:00 — 21:00" },
+    { day: "Wed – Sun", time: "11:00 — 21:00" },
   ],
 };

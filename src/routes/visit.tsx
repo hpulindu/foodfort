@@ -10,7 +10,7 @@ export const Route = createFileRoute("/visit")({
       { title: "Visit · Food Fort · Bluff Point WA" },
       { name: "description", content: `Find Food Fort at ${restaurant.address}. Opening hours, phone and directions.` },
       { property: "og:title", content: "Visit Food Fort" },
-      { property: "og:description", content: `${restaurant.address}. Open daily.` },
+      { property: "og:description", content: `${restaurant.address}. Open Tuesday to Sunday.` },
     ],
   }),
   component: VisitPage,
