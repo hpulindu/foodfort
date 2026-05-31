@@ -8,9 +8,9 @@ export const Route = createFileRoute("/menu")({
   head: () => ({
     meta: [
       { title: "Menu · Food Fort · Bluff Point WA" },
-      { name: "description", content: "The full Food Fort menu — pizzas, kebabs, gozleme, burgers, tacos, loaded fries, kids menu and combos." },
+      { name: "description", content: "The full Food Fort menu — pizzas, kebabs, gozleme, burgers, tacos, salads, loaded fries, kids menu and combos." },
       { property: "og:title", content: "Menu · Food Fort" },
-      { property: "og:description", content: "Wood-fired pizzas, hand-rolled kebabs, smashed burgers and more." },
+      { property: "og:description", content: "Wood-fired pizzas, hand-rolled kebabs, smashed burgers, fresh salads and more." },
     ],
   }),
   component: MenuPage,
