@@ -75,25 +75,32 @@ function MenuPage() {
               </header>
 
               <ul className="divide-y divide-[var(--gold)]/20">
-                {section.items.map((item) => (
-                  <li key={item.name} className="py-6 lg:py-7 grid grid-cols-[1fr_auto] gap-6 items-baseline group">
-                    <div>
-                      <h3 className="font-display text-xl lg:text-2xl text-[var(--forest-deep)]">
-                        {item.name}
-                        {item.badge && <Badge kind={item.badge} />}
-                      </h3>
-                      {item.description && (
-                        <p className="mt-2 text-sm text-[var(--forest)]/70 leading-relaxed max-w-2xl">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-3 whitespace-nowrap">
-                      <span className="hidden sm:block w-16 lg:w-32 border-b border-dotted border-[var(--gold)]/40 mb-1.5" />
-                      <span className="font-display text-xl text-[var(--forest-deep)]">${item.price}</span>
-                    </div>
-                  </li>
-                ))}
+                {section.items.map((item) => {
+                  const id = `${section.id}-${item.name}`;
+                  return (
+                    <li key={item.name} className="py-6 lg:py-7 grid grid-cols-[1fr_auto] gap-4 sm:gap-6 items-center group">
+                      <div>
+                        <h3 className="font-display text-xl lg:text-2xl text-[var(--forest-deep)]">
+                          {item.name}
+                          {item.badge && <Badge kind={item.badge} />}
+                        </h3>
+                        {item.description && (
+                          <p className="mt-2 text-sm text-[var(--forest)]/70 leading-relaxed max-w-2xl">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 sm:gap-5 whitespace-nowrap">
+                        <span className="font-display text-xl text-[var(--forest-deep)]">${item.price}</span>
+                        <AddBtn
+                          id={id}
+                          name={item.name}
+                          price={parseFloat(item.price)}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}
