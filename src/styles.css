@@ -40,12 +40,12 @@
 }
 
 :root {
-  /* Brand */
-  --forest-deep: oklch(0.22 0.05 145);
-  --forest: oklch(0.32 0.07 145);
-  --gold: oklch(0.78 0.13 85);
-  --gold-soft: oklch(0.85 0.08 85);
-  --cream: oklch(0.97 0.015 85);
+  /* Brand — Matte charcoal + burnished copper */
+  --forest-deep: #0F1012;        /* Matte Charcoal Black (primary background) */
+  --forest: #1A1B1E;             /* Slightly lifted charcoal (secondary surface) */
+  --gold: #C26B35;               /* Rich Burnished Copper (primary accent) */
+  --gold-soft: #D98959;          /* Lighter copper for highlights */
+  --cream: #F2EBE3;              /* Warm off-white for text on dark */
 
   --background: oklch(0.97 0.015 85);
   --foreground: oklch(0.18 0.04 145);
