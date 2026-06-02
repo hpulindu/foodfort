@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import { menu, sauces, restaurant } from "@/lib/menu-data";
+import { useCart } from "@/lib/cart";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
