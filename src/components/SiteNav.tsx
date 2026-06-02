@@ -2,10 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logo from "@/assets/food-fort-logo.png";
 import { restaurant } from "@/lib/menu-data";
+import { CartButton, CartDrawer } from "@/components/CartDrawer";
 
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -33,22 +35,31 @@ export function SiteNav() {
           <Link to="/visit" className="hover:text-[var(--gold)] transition-colors">Visit</Link>
         </nav>
 
-        <a
-          href={restaurant.phoneHref}
-          className="hidden md:inline-flex items-center gap-2 eyebrow text-[var(--forest-deep)] bg-[var(--gold)] hover:bg-[var(--gold-soft)] px-5 py-3 transition-colors"
-        >
-          Order · {restaurant.phone}
-        </a>
+        <div className="flex items-center gap-2 md:gap-4">
+          <Link
+            to="/menu"
+            className="hidden md:inline-flex items-center gap-2 eyebrow text-[var(--forest-deep)] bg-[var(--gold)] hover:bg-[var(--gold-soft)] px-5 py-3 transition-colors"
+          >
+            Order Online
+          </Link>
+          <a
+            href={restaurant.phoneHref}
+            className="hidden lg:inline-flex items-center eyebrow text-[var(--cream)]/85 hover:text-[var(--gold)] transition-colors"
+          >
+            {restaurant.phone}
+          </a>
+          <CartButton onClick={() => setCartOpen(true)} />
 
-        <button
-          aria-label="Menu"
-          onClick={() => setOpen(v => !v)}
-          className="md:hidden text-[var(--cream)] p-2"
-        >
-          <span className="block w-6 h-px bg-current mb-1.5" />
-          <span className="block w-6 h-px bg-current mb-1.5" />
-          <span className="block w-4 h-px bg-current ml-auto" />
-        </button>
+          <button
+            aria-label="Menu"
+            onClick={() => setOpen(v => !v)}
+            className="md:hidden text-[var(--cream)] p-2"
+          >
+            <span className="block w-6 h-px bg-current mb-1.5" />
+            <span className="block w-6 h-px bg-current mb-1.5" />
+            <span className="block w-4 h-px bg-current ml-auto" />
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -57,10 +68,13 @@ export function SiteNav() {
             <Link to="/" onClick={() => setOpen(false)}>Home</Link>
             <Link to="/menu" onClick={() => setOpen(false)}>Menu</Link>
             <Link to="/visit" onClick={() => setOpen(false)}>Visit</Link>
+            <Link to="/menu" onClick={() => setOpen(false)} className="text-[var(--gold)]">Order Online</Link>
             <a href={restaurant.phoneHref} className="text-[var(--gold)]">{restaurant.phone}</a>
           </div>
         </div>
       )}
+
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
   );
 }

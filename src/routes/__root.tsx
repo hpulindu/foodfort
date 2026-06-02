@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
+import { CartProvider } from "../lib/cart";
 
 function NotFoundComponent() {
   return (
@@ -103,7 +104,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <CartProvider>
+        <Outlet />
+      </CartProvider>
     </QueryClientProvider>
   );
 }
