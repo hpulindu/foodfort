@@ -80,10 +80,6 @@ function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-8 right-8 hidden lg:flex flex-col items-center gap-3 fade-in reveal-delay-4">
-          <span className="eyebrow text-[var(--cream)]/50 rotate-90 origin-center translate-y-6">Scroll</span>
-          <span className="h-12 w-px bg-[var(--cream)]/30" />
-        </div>
       </section>
 
       {/* MANIFESTO */}
