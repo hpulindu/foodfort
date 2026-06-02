@@ -26,6 +26,23 @@ function Badge({ kind }: { kind: "chef" | "veg" }) {
   return <span className="eyebrow text-[var(--forest)]/70 ml-2 align-middle">◆ Veg</span>;
 }
 
+function AddBtn({ id, name, price }: { id: string; name: string; price: number }) {
+  const { add } = useCart();
+  return (
+    <button
+      onClick={() => {
+        add({ id, name, price });
+        toast.success(`${name} added`, { duration: 1500 });
+      }}
+      aria-label={`Add ${name} to cart`}
+      className="inline-flex items-center gap-1.5 eyebrow text-xs text-[var(--cream)] bg-[var(--forest-deep)] hover:bg-[var(--gold)] hover:text-[var(--forest-deep)] px-3 py-2 transition-colors"
+    >
+      <Plus className="w-3 h-3" />
+      Add
+    </button>
+  );
+}
+
 function MenuPage() {
   return (
     <div className="min-h-screen bg-[var(--cream)] text-[var(--forest-deep)]">
