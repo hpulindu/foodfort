@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Staff-only access — custom claim set server-side via Admin SDK.
+    function isStaff() {
+      return request.auth != null && request.auth.token.staff == true;
+    }
+
+    // ── Menu sections ─────────────────────────────────────────────────────────
+    // Public read for the customer web app.
+    // Staff can update availability fields only.
+    match /menuSections/{doc} {
+      allow read: if true;
+      allow update: if isStaff()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['availability']);
+      allow create, delete: if false;
+    }
+
+    // ── Sauces ────────────────────────────────────────────────────────────────
+    // Public read for the customer web app.
+    // Staff can toggle the available flag only.
+    match /sauces/{doc} {
+      allow read: if true;
+      allow update: if isStaff()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['available']);
+      allow create, delete: if false;
+    }
+
+    // ── Orders ────────────────────────────────────────────────────────────────
+    // All order creation is handled exclusively by Firebase Functions (Admin SDK),
+    // which bypasses these rules. The browser can never write directly to orders.
+    //
+    // Staff can read all orders and update orderStatus.
+    match /orders/{orderId} {
+      allow create: if false;
+
+      allow read: if isStaff();
+
+      allow update: if isStaff()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['orderStatus']);
+
+      allow delete: if false;
+    }
+
+    // ── Store settings ────────────────────────────────────────────────────────
+    // Public read for operation hours (order gating on the web app).
+    // Staff can update the operationHours document only.
+    match /storeSettings/{doc} {
+      allow read: if true;
+      allow create: if doc == "operationHours"
+                    && !exists(/databases/$(database)/documents/storeSettings/operationHours);
+      allow update: if isStaff()
+                    && doc == "operationHours"
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['timezone', 'days', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // ── Failed payments ───────────────────────────────────────────────────────
+    // Written by backend Functions only. Never accessible from the browser.
+    match /failedPayments/{doc} {
+      allow read, write: if false;
+    }
+
+    // ── Catch-all: deny everything else ──────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

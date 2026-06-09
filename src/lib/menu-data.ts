@@ -3,6 +3,8 @@ export type MenuItem = {
   description?: string;
   price: string;
   badge?: "chef" | "veg";
+  /** false when marked unavailable in the dashboard */
+  available?: boolean;
 };
 
 export type MenuSection = {
@@ -136,9 +138,23 @@ export const menu: MenuSection[] = [
   },
 ];
 
-export const sauces = [
-  "Sour Cream", "Sweet Chilli", "Hot Chilli", "Garlic",
-  "BBQ", "Satay", "Tomato", "Hummus",
+export type Sauce = {
+  name: string;
+  // Price as a string for display parity with MenuItem. "0.00" means free.
+  price: string;
+  /** false when marked unavailable in the dashboard */
+  available?: boolean;
+};
+
+export const sauces: Sauce[] = [
+  { name: "Sour Cream", price: "0.00" },
+  { name: "Sweet Chilli", price: "0.00" },
+  { name: "Hot Chilli", price: "0.00" },
+  { name: "Garlic", price: "0.00" },
+  { name: "BBQ", price: "0.00" },
+  { name: "Satay", price: "0.00" },
+  { name: "Tomato", price: "0.00" },
+  { name: "Hummus", price: "0.00" },
 ];
 
 export const restaurant = {

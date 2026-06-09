@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Clock, MapPin, Phone } from "lucide-react";
+import { CheckCircle2, Clock, MapPin, Phone, ShieldCheck } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import { formatPrice } from "@/lib/cart";
+import { formatOrderNumber } from "@/lib/orders";
 import { restaurant } from "@/lib/menu-data";
 
 type SearchParams = { id?: string };
@@ -22,27 +23,36 @@ export const Route = createFileRoute("/order-confirmation")({
   component: ConfirmationPage,
 });
 
-type Order = {
+type ConfirmedOrder = {
   id: string;
+  orderNumber?: number;
   type: "pickup" | "dinein";
   pickupTime: string | null;
   table: string | null;
   customer: { name: string; phone: string; email: string; notes: string };
   items: { id: string; name: string; price: number; qty: number }[];
   subtotal: number;
+  serviceFee: number;
+  cardProcessingFee: number;
   total: number;
-  placedAt: string;
+  paymentStatus: string;
 };
 
 function ConfirmationPage() {
   const { id } = Route.useSearch();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<ConfirmedOrder | null>(null);
 
   useEffect(() => {
     const orderId = id ?? window.localStorage.getItem("foodfort_last_order");
     if (!orderId) return;
     const raw = window.localStorage.getItem(`foodfort_order_${orderId}`);
-    if (raw) setOrder(JSON.parse(raw));
+    if (raw) {
+      try {
+        setOrder(JSON.parse(raw) as ConfirmedOrder);
+      } catch {
+        // corrupt storage — order will remain null
+      }
+    }
   }, [id]);
 
   return (
@@ -59,7 +69,11 @@ function ConfirmationPage() {
           <Ornament className="w-40 mx-auto text-[var(--gold)] mt-8" />
           {order && (
             <p className="mt-8 text-[var(--cream)]/70">
-              Order <span className="text-[var(--gold)] font-mono">#{order.id}</span> received and sent to the kitchen.
+              Order{" "}
+              <span className="text-[var(--gold)] font-mono">
+                #{formatOrderNumber(order.orderNumber, order.id)}
+              </span>{" "}
+              received and sent to the kitchen.
             </p>
           )}
         </div>
@@ -68,43 +82,89 @@ function ConfirmationPage() {
       {order ? (
         <div className="px-6 lg:px-10 py-20">
           <div className="mx-auto max-w-3xl">
+            {/* Payment badge */}
+            {order.paymentStatus === "paid" && (
+              <div className="mb-8 inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2 text-sm">
+                <ShieldCheck className="w-4 h-4" />
+                Payment confirmed · AUD {order.total?.toFixed(2)}
+              </div>
+            )}
+
             <div className="grid sm:grid-cols-2 gap-4 mb-12">
               <InfoCard
                 icon={<Clock className="w-5 h-5" />}
-                label={order.type === "pickup" ? "Pickup time" : "Table"}
+                label={order.type === "pickup" ? "Ready in" : "Table"}
                 value={
                   order.type === "pickup"
-                    ? order.pickupTime === "asap"
-                      ? "ASAP (≈20 min)"
-                      : `In ${order.pickupTime} minutes`
+                    ? "Approx. 20 minutes"
                     : `Table ${order.table}`
                 }
               />
               <InfoCard
-                icon={order.type === "pickup" ? <MapPin className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
+                icon={
+                  order.type === "pickup" ? (
+                    <MapPin className="w-5 h-5" />
+                  ) : (
+                    <Phone className="w-5 h-5" />
+                  )
+                }
                 label={order.type === "pickup" ? "Pickup at" : "Questions?"}
-                value={order.type === "pickup" ? restaurant.address : restaurant.phone}
+                value={
+                  order.type === "pickup" ? restaurant.address : restaurant.phone
+                }
               />
             </div>
 
             <div className="bg-white border border-[var(--gold)]/20 p-6 lg:p-8">
               <div className="flex items-baseline justify-between mb-6">
                 <h2 className="font-display text-2xl">Order summary</h2>
-                <span className="eyebrow text-xs text-[var(--forest)]/60">{order.items.length} items</span>
+                <span className="eyebrow text-xs text-[var(--forest)]/60">
+                  {order.items.length} items
+                </span>
               </div>
 
               <ul className="divide-y divide-[var(--gold)]/15">
                 {order.items.map(i => (
-                  <li key={i.id} className="py-4 flex justify-between gap-4 text-sm">
-                    <span><span className="text-[var(--gold)] mr-2">{i.qty}×</span>{i.name}</span>
-                    <span className="font-display text-base">{formatPrice(i.qty * i.price)}</span>
+                  <li
+                    key={i.id}
+                    className="py-4 flex justify-between gap-4 text-sm"
+                  >
+                    <span>
+                      <span className="text-[var(--gold)] mr-2">{i.qty}×</span>
+                      {i.name}
+                    </span>
+                    <span className="font-display text-base">
+                      {formatPrice(i.qty * i.price)}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-6 pt-6 border-t border-[var(--gold)]/30 flex justify-between items-baseline">
-                <span className="eyebrow">Paid</span>
-                <span className="font-display text-3xl gold-text">{formatPrice(order.total)}</span>
+              <div className="mt-6 pt-6 border-t border-[var(--gold)]/30 space-y-2 text-sm">
+                <div className="flex justify-between text-[var(--forest)]/70">
+                  <span>Subtotal</span>
+                  <span className="font-display">{formatPrice(order.subtotal)}</span>
+                </div>
+                {order.serviceFee != null && (
+                  <div className="flex justify-between text-[var(--forest)]/70">
+                    <span>Service fee</span>
+                    <span className="font-display">{formatPrice(order.serviceFee)}</span>
+                  </div>
+                )}
+                {order.cardProcessingFee != null && (
+                  <div className="flex justify-between text-[var(--forest)]/70">
+                    <span>Card processing</span>
+                    <span className="font-display">
+                      {formatPrice(order.cardProcessingFee)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-baseline pt-3 mt-1 border-t border-[var(--gold)]/20">
+                  <span className="eyebrow">Total paid</span>
+                  <span className="font-display text-3xl gold-text">
+                    {formatPrice(order.total)}
+                  </span>
+                </div>
               </div>
 
               {order.customer.notes && (
@@ -128,7 +188,10 @@ function ConfirmationPage() {
       ) : (
         <div className="px-6 py-32 text-center">
           <p className="text-[var(--forest)]/70">No recent order found.</p>
-          <Link to="/menu" className="mt-6 inline-block eyebrow border-b border-[var(--gold)] pb-1">
+          <Link
+            to="/menu"
+            className="mt-6 inline-block eyebrow border-b border-[var(--gold)] pb-1"
+          >
             Browse menu
           </Link>
         </div>
@@ -139,7 +202,15 @@ function ConfirmationPage() {
   );
 }
 
-function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="bg-white border border-[var(--gold)]/20 p-5 flex items-start gap-4">
       <div className="text-[var(--gold)] mt-0.5">{icon}</div>

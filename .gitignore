@@ -7,6 +7,25 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Android dashboard app — kept local, not published to GitHub
+FoodFort Dashboard App/
+
+# Local env files (Vite loads from env/ — never commit secrets)
+env/
+
+# Firebase
+.firebase/
+firebase-debug.log*
+ui-debug.log
+
+# Cloud Functions compiled output (rebuilt via `npm run build` in functions/)
+functions/lib/
+
+# Service account / credential files
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+credentials.json
+
 node_modules
 dist
 dist-ssr
@@ -15,6 +34,9 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.env.*
+!.env.example
 
 # Wrangler / Cloudflare
 .wrangler/

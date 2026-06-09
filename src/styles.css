@@ -40,11 +40,12 @@
 }
 
 :root {
-  /* Brand — Matte charcoal + burnished copper */
+  /* Brand — Matte charcoal + copper accent */
   --forest-deep: #0F1012;        /* Matte Charcoal Black (primary background) */
   --forest: #1A1B1E;             /* Slightly lifted charcoal (secondary surface) */
-  --gold: #C26B35;               /* Rich Burnished Copper (primary accent) */
-  --gold-soft: #D98959;          /* Lighter copper for highlights */
+  --gold: rgb(188, 106, 47);     /* Primary accent */
+  --gold-soft: rgb(210, 138, 78); /* Lighter copper for highlights */
+  --gold-foreground: rgb(255, 255, 255);
   --cream: #F2EBE3;              /* Warm off-white for text on dark */
 
   --background: #F2EBE3;
@@ -53,19 +54,19 @@
   --card-foreground: #0F1012;
   --popover: #FFFFFF;
   --popover-foreground: #0F1012;
-  --primary: #C26B35;
-  --primary-foreground: #0F1012;
+  --primary: rgb(188, 106, 47);
+  --primary-foreground: rgb(255, 255, 255);
   --secondary: #E8DFD3;
   --secondary-foreground: #0F1012;
   --muted: #E8DFD3;
   --muted-foreground: #6B5A4A;
-  --accent: #C26B35;
-  --accent-foreground: #0F1012;
+  --accent: rgb(188, 106, 47);
+  --accent-foreground: rgb(255, 255, 255);
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: #F2EBE3;
   --border: #D9CDBE;
   --input: #D9CDBE;
-  --ring: #C26B35;
+  --ring: rgb(188, 106, 47);
   --radius: 0.25rem;
 }
 
@@ -169,6 +170,32 @@
   }
   .slow-zoom { animation: slowZoom 16s ease-out forwards; }
 
+  /* Shimmer sweep used for skeleton loading states */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--gold) 10%, transparent);
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--gold) 18%, transparent),
+      transparent
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer::after { animation: none; }
+  }
+
   .grain::before {
     content: "";
     position: absolute;
@@ -177,5 +204,66 @@
     opacity: 0.06;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     mix-blend-mode: overlay;
+  }
+
+  /* ── Cross-browser full-viewport height ────────────────── */
+  /*
+   * dvh/svh aren't supported in Safari < 15.4 or Firefox < 110.
+   * Two declarations: browsers that understand svh use it; others
+   * keep the 100vh fallback (ignoring the unknown value).
+   * svh = "small viewport height" — stable even as the iOS address
+   * bar animates in/out, preventing layout reflow mid-scroll.
+   */
+  .hero-height {
+    height: 100vh;   /* universal fallback */
+    height: 100svh;  /* stable small-viewport height (iOS address bar safe) */
+  }
+
+  /* ── Scroll-triggered section reveals ──────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── Ticker / marquee strip ─────────────────────────────── */
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker 32s linear infinite;
+  }
+
+  /* ── Hero scroll indicator ──────────────────────────────── */
+  @keyframes scrollBounce {
+    0%, 100% { opacity: 0.65; transform: translateY(0); }
+    50%       { opacity: 0.35; transform: translateY(7px); }
+  }
+  .scroll-hint { animation: scrollBounce 1.8s ease-in-out infinite; }
+
+  /* ── prefers-reduced-motion: disable all motion ─────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up, .fade-in {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    .slow-zoom    { animation: none !important; }
+    .shimmer::after { animation: none !important; }
+    .ticker-track { animation: none !important; }
+    .scroll-hint  { animation: none !important; }
+    .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
   }
 }
