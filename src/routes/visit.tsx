@@ -77,7 +77,7 @@ function VisitPage() {
           <div className="aspect-square lg:aspect-auto lg:min-h-[600px] overflow-hidden border border-[var(--gold)]/30">
             <iframe
               title="Food Fort location"
-              src="https://www.google.com/maps?q=Shop+6%2F429+Chapman+Rd%2C+Bluff+Point+WA+6530&output=embed"
+              src={restaurant.mapsEmbedUrl}
               className="w-full h-full grayscale-[0.3]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

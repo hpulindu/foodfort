@@ -164,7 +164,9 @@ export const restaurant = {
   phoneHref: "tel:+61899215295",
   email: "Ask@foodfort.com.au",
   address: "Shop 6/429 Chapman Rd, Bluff Point WA 6530",
-  mapsUrl: "https://maps.google.com/?q=Shop+6%2F429+Chapman+Rd%2C+Bluff+Point+WA+6530",
+  mapsUrl: "https://maps.app.goo.gl/hYQpzNRURFxgAbGc7",
+  mapsEmbedUrl:
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3401.5!2d114.6242822!3d-28.7372796!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2bda45a9a38f2a9f%3A0x2666992646db481b!2sFOOD%20FORT!5e0!3m2!1sen!2sau!4v1749456000000!5m2!1sen!2sau",
   hours: [
     { day: "Monday", time: "Closed" },
     { day: "Tuesday", time: "15:00 — 21:00" },

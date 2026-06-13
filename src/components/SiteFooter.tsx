@@ -5,7 +5,7 @@ import { restaurant } from "@/lib/menu-data";
 export function SiteFooter() {
   return (
     <footer className="bg-[var(--forest-deep)] text-[var(--cream)] relative grain overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-20 lg:py-28 relative">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-20 lg:pt-28 pb-6 relative">
         <div className="grid gap-16 lg:grid-cols-12">
           <div className="lg:col-span-5">
             <img src={logo} alt="Food Fort" className="h-20 w-auto -ml-2" />
@@ -53,8 +53,19 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-20 pt-8 border-t border-[var(--gold)]/15 flex flex-col md:flex-row justify-between gap-4 eyebrow text-[var(--cream)]/45">
-          <span>© {new Date().getFullYear()} Food Fort. All rights reserved.</span>
+        <div className="mt-16 pt-8 border-t border-[var(--gold)]/15 flex flex-col md:flex-row justify-between gap-4 eyebrow text-[var(--cream)]/45">
+          <span>
+            © {new Date().getFullYear()} Food Fort. All rights reserved.{" "}
+            <span className="text-[var(--cream)]/30">|</span>{" "}
+            <a
+              href="https://skryptone.com.au"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[var(--gold)] transition-colors"
+            >
+              Powered by Skryptone
+            </a>
+          </span>
           <span>100% Halal · Freshly Prepared Daily</span>
         </div>
       </div>

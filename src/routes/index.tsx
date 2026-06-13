@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import heroCover from "@/assets/FoodFort_Cover.jpg";
+import heroLogo from "@/assets/Hero Section Logo.png";
 import butterChickenPizza from "@/assets/FoodFort_ButterChickenPizza.jpg";
 import smashedBeefBurger from "@/assets/FoodFort_SmashedBeefBurger.jpg";
 import chickenKebab from "@/assets/FoodFort_ChickenKebab.jpg";
@@ -83,22 +84,30 @@ function HomePage() {
           {/* LEFT: text content */}
           <div className="relative flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-20 pt-16 sm:pt-20 pb-4 sm:pb-6 max-w-2xl lg:max-w-none">
 
-            {/* Brand headline */}
-            <h1>
-              <span className="block font-display text-[clamp(3.25rem,6.5vw,8rem)] leading-[0.88] text-[var(--cream)] fade-up">
-                Food
-              </span>
-              <span className="block font-display text-[clamp(3.25rem,6.5vw,8rem)] leading-[0.88] italic gold-text fade-up reveal-delay-1">
-                Fort
-              </span>
-              <span className="block font-display text-[clamp(1.25rem,1.9vw,2.1rem)] italic text-[var(--cream)]/40 mt-2 sm:mt-3 fade-up reveal-delay-2">
-                Hunger Ends Here
-              </span>
-            </h1>
+            {/* Brand headline with castle logo */}
+            <div className="flex items-center gap-5 sm:gap-7 lg:gap-8 fade-up">
+              <img
+                src={heroLogo}
+                alt=""
+                className="h-[clamp(7rem,16vw,13rem)] w-auto shrink-0"
+                aria-hidden
+              />
+              <h1>
+                <span className="block font-display text-[clamp(3.25rem,6.5vw,8rem)] leading-[0.88] text-[var(--cream)]">
+                  Food
+                </span>
+                <span className="block font-display text-[clamp(3.25rem,6.5vw,8rem)] leading-[0.88] italic gold-text fade-up reveal-delay-1">
+                  Fort
+                </span>
+                <span className="block font-display text-[clamp(1.25rem,1.9vw,2.1rem)] italic text-[var(--cream)]/40 mt-2 sm:mt-3 fade-up reveal-delay-2">
+                  Hunger Ends Here
+                </span>
+              </h1>
+            </div>
 
             {/* Description */}
             <p className="mt-4 sm:mt-6 max-w-[26rem] lg:max-w-[30rem] text-[var(--cream)]/55 text-sm sm:text-base leading-relaxed fade-up reveal-delay-2 hidden sm:block">
-              Pizzas, kebabs, burgers, tacos and more — crafted with fresh
+              Pizzas, kebabs, burgers, tacos and more, crafted with fresh
               ingredients, bold flavours, and a whole lot of heart. Every
               craving, conquered.
             </p>
@@ -204,7 +213,7 @@ function HomePage() {
           </h2>
           <p className="mt-10 max-w-2xl mx-auto text-lg leading-relaxed text-[var(--forest)]/80">
             Every dough is proved on site. Every sauce simmered slow. We cook for
-            cravings — generous, honest food made with care, never shortcuts.
+            cravings, generous, honest food made with care, never shortcuts.
           </p>
         </div>
       </section>
@@ -291,7 +300,7 @@ function HomePage() {
             </p>
             <p className="mt-4 text-base leading-relaxed text-[var(--forest)]/80">
               No frozen shortcuts. No tired classics. Just generous portions of
-              real, fresh food — the way it ought to be.
+              real, fresh food, the way it ought to be.
             </p>
             <div className="mt-10 grid grid-cols-2 gap-8">
               <div>
