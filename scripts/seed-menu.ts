@@ -75,6 +75,7 @@ async function main() {
         description: item.description ?? null,
         price: Number.parseFloat(item.price),
         badge: item.badge ?? null,
+        image: item.image ?? null,
       })),
     });
   });

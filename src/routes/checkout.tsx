@@ -11,12 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useCart, formatPrice, serviceChargeFor, cardProcessingFeeFor } from "@/lib/cart";
@@ -37,6 +32,11 @@ import {
   confirmPayment,
   type OrderType,
 } from "@/lib/orders";
+import {
+  fetchOrderingStatus,
+  getOrderingPausedMessage,
+  ORDERING_PAUSED_MESSAGE,
+} from "@/lib/ordering-status";
 import {
   CHECKOUT_LIMITS,
   filterEmailInput,
@@ -87,9 +87,7 @@ function CheckoutPage() {
     getStripeConnectConfig()
       .then(({ connectedAccountId }) => {
         if (cancelled) return;
-        setStripePromise(
-          loadStripe(STRIPE_PUBLISHABLE_KEY, { stripeAccount: connectedAccountId })
-        );
+        setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY, { stripeAccount: connectedAccountId }));
       })
       .catch(() => {
         if (!cancelled) setStripeError("Could not load payment form. Please refresh.");
@@ -133,12 +131,8 @@ function CheckoutPage() {
           >
             <ArrowLeft className="w-3 h-3" /> Back to menu
           </Link>
-          <h1 className="mt-6 font-display text-[clamp(2.5rem,5vw,4rem)] leading-none">
-            Checkout
-          </h1>
-          <p className="mt-3 text-[var(--cream)]/70">
-            Complete your order — pickup or dine-in.
-          </p>
+          <h1 className="mt-6 font-display text-[clamp(2.5rem,5vw,4rem)] leading-none">Checkout</h1>
+          <p className="mt-3 text-[var(--cream)]/70">Complete your order — pickup or dine-in.</p>
         </div>
       </section>
 
@@ -168,7 +162,8 @@ function SoldOutBanner() {
     <div className="flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-4">
       <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
       <p>
-        One or more items in your order are sold out. Remove them from your cart to continue with payment.
+        One or more items in your order are sold out. Remove them from your cart to continue with
+        payment.
       </p>
     </div>
   );
@@ -201,15 +196,17 @@ function CheckoutForm() {
   const [processing, setProcessing] = useState(false);
   const [storeOpen, setStoreOpen] = useState(true);
   const [storeClosedMessage, setStoreClosedMessage] = useState("");
+  const [orderingPaused, setOrderingPaused] = useState(false);
+  const [orderingPausedMessage, setOrderingPausedMessage] = useState("");
 
   const serviceFee = useMemo(() => serviceChargeFor(subtotal), [subtotal]);
   const cardFee = useMemo(
     () => cardProcessingFeeFor(subtotal + serviceFee),
-    [subtotal, serviceFee]
+    [subtotal, serviceFee],
   );
   const total = useMemo(
     () => +(subtotal + serviceFee + cardFee).toFixed(2),
-    [subtotal, serviceFee, cardFee]
+    [subtotal, serviceFee, cardFee],
   );
   const cartItemKey = items.map((i) => i.id).join("|");
 
@@ -245,6 +242,25 @@ function CheckoutForm() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchOrderingStatus()
+      .then((status) => {
+        if (cancelled) return;
+        setOrderingPaused(status.paused);
+        setOrderingPausedMessage(getOrderingPausedMessage(status));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOrderingPaused(false);
+          setOrderingPausedMessage("");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const validation = useMemo(
     () =>
       validateCheckoutDetails({
@@ -255,10 +271,10 @@ function CheckoutForm() {
         tableNo,
         orderType,
       }),
-    [name, phone, email, notes, tableNo, orderType]
+    [name, phone, email, notes, tableNo, orderType],
   );
 
-  const canPay = items.length > 0 && !hasSoldOutItems && storeOpen;
+  const canPay = items.length > 0 && !hasSoldOutItems && storeOpen && !orderingPaused;
 
   function markTouched(field: CheckoutField) {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
@@ -269,11 +285,7 @@ function CheckoutForm() {
     return validation.errors[field];
   }
 
-  function handleFieldChange(
-    field: CheckoutField,
-    value: string,
-    setter: (value: string) => void
-  ) {
+  function handleFieldChange(field: CheckoutField, value: string, setter: (value: string) => void) {
     setter(value);
   }
 
@@ -300,7 +312,7 @@ function CheckoutForm() {
     if (!result.ok) return;
 
     const { sanitized } = result;
-    if (items.length === 0 || hasSoldOutItems || !storeOpen) return;
+    if (items.length === 0 || hasSoldOutItems || !storeOpen || orderingPaused) return;
 
     const cardEl = elements.getElement(CardElement);
     if (!cardEl) return;
@@ -361,7 +373,7 @@ function CheckoutForm() {
       try {
         window.localStorage.setItem(
           `foodfort_order_${orderId}`,
-          JSON.stringify({ ...order, id: orderId })
+          JSON.stringify({ ...order, id: orderId }),
         );
         window.localStorage.setItem("foodfort_last_order", orderId);
       } catch {
@@ -381,6 +393,10 @@ function CheckoutForm() {
         const ids = soldOutIdsFromError(msg, items);
         if (ids.length > 0) markSoldOut(ids);
         toast.error("An item in your cart is sold out. Remove it to continue.");
+      } else if (/ordering is temporarily paused/i.test(msg)) {
+        setOrderingPaused(true);
+        setOrderingPausedMessage(msg || ORDERING_PAUSED_MESSAGE);
+        toast.error(msg || ORDERING_PAUSED_MESSAGE);
       } else if (isStoreClosedMessage(msg)) {
         setStoreOpen(false);
         setStoreClosedMessage(msg);
@@ -426,11 +442,7 @@ function CheckoutForm() {
                 <Input
                   value={tableNo}
                   onChange={(e) =>
-                    handleFieldChange(
-                      "tableNo",
-                      filterTableInput(e.target.value),
-                      setTableNo
-                    )
+                    handleFieldChange("tableNo", filterTableInput(e.target.value), setTableNo)
                   }
                   onBlur={() => markTouched("tableNo")}
                   placeholder="e.g. 7"
@@ -467,11 +479,7 @@ function CheckoutForm() {
                 type="tel"
                 value={phone}
                 onChange={(e) =>
-                  handleFieldChange(
-                    "phone",
-                    filterPhoneInput(e.target.value),
-                    setPhone
-                  )
+                  handleFieldChange("phone", filterPhoneInput(e.target.value), setPhone)
                 }
                 onBlur={() => markTouched("phone")}
                 placeholder="0412345678"
@@ -487,11 +495,7 @@ function CheckoutForm() {
                 type="email"
                 value={email}
                 onChange={(e) =>
-                  handleFieldChange(
-                    "email",
-                    filterEmailInput(e.target.value),
-                    setEmail
-                  )
+                  handleFieldChange("email", filterEmailInput(e.target.value), setEmail)
                 }
                 onBlur={() => markTouched("email")}
                 placeholder="jane@example.com"
@@ -510,11 +514,7 @@ function CheckoutForm() {
               <textarea
                 value={notes}
                 onChange={(e) =>
-                  handleFieldChange(
-                    "notes",
-                    filterNotesInput(e.target.value),
-                    setNotes
-                  )
+                  handleFieldChange("notes", filterNotesInput(e.target.value), setNotes)
                 }
                 onBlur={() => markTouched("notes")}
                 rows={3}
@@ -533,18 +533,13 @@ function CheckoutForm() {
           <div className="bg-white border border-[var(--gold)]/30 p-6 space-y-5">
             <div className="flex items-center gap-2">
               <LockKeyhole className="w-4 h-4 text-[var(--gold)]" />
-              <span className="eyebrow text-xs text-[var(--forest)]/70">
-                Secured by Stripe
-              </span>
+              <span className="eyebrow text-xs text-[var(--forest)]/70">Secured by Stripe</span>
             </div>
 
             <div>
               <Label>Card details</Label>
               <div className="mt-2 px-4 py-3 border border-[var(--gold)]/30 focus-within:border-[var(--forest-deep)] transition-colors">
-                <CardElement
-                  onChange={() => setCardError(null)}
-                  options={CARD_ELEMENT_OPTIONS}
-                />
+                <CardElement onChange={() => setCardError(null)} options={CARD_ELEMENT_OPTIONS} />
               </div>
             </div>
 
@@ -565,7 +560,13 @@ function CheckoutForm() {
             {items.length} item{items.length > 1 ? "s" : ""}
           </h2>
 
-          {!storeOpen && storeClosedMessage && (
+          {orderingPaused && orderingPausedMessage && (
+            <div className="mb-4">
+              <ClosedBanner message={orderingPausedMessage} />
+            </div>
+          )}
+
+          {!orderingPaused && !storeOpen && storeClosedMessage && (
             <div className="mb-4">
               <ClosedBanner message={storeClosedMessage} />
             </div>
@@ -578,7 +579,7 @@ function CheckoutForm() {
           )}
 
           <ul className="space-y-3 mb-6 max-h-[240px] overflow-y-auto pr-2">
-            {items.map(item => {
+            {items.map((item) => {
               const soldOut = soldOutIds.includes(item.id);
               return (
                 <li
@@ -623,11 +624,13 @@ function CheckoutForm() {
             <LockKeyhole className="w-4 h-4" />
             {processing
               ? "Processing…"
-              : !storeOpen
-                ? "Currently closed"
-                : hasSoldOutItems
-                  ? "Remove sold out items"
-                  : `Pay ${formatPrice(total)}`}
+              : orderingPaused
+                ? "Ordering paused"
+                : !storeOpen
+                  ? "Currently closed"
+                  : hasSoldOutItems
+                    ? "Remove sold out items"
+                    : `Pay ${formatPrice(total)}`}
           </button>
         </div>
       </aside>
@@ -648,11 +651,7 @@ function SectionTitle({ number, title }: { number: string; title: string }) {
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="eyebrow text-xs text-[var(--forest)]/70 block mb-2">
-      {children}
-    </label>
-  );
+  return <label className="eyebrow text-xs text-[var(--forest)]/70 block mb-2">{children}</label>;
 }
 
 function Field({
@@ -720,9 +719,7 @@ function TypeCard({
           : "border-[var(--gold)]/30 bg-white hover:border-[var(--forest-deep)]"
       } disabled:opacity-60 disabled:cursor-not-allowed`}
     >
-      <div className={active ? "text-[var(--gold)]" : "text-[var(--forest-deep)]"}>
-        {icon}
-      </div>
+      <div className={active ? "text-[var(--gold)]" : "text-[var(--forest-deep)]"}>{icon}</div>
       <h3 className="font-display text-xl mt-3">{title}</h3>
       <p
         className={`text-xs mt-1 ${active ? "text-[var(--cream)]/70" : "text-[var(--forest)]/60"}`}
@@ -733,15 +730,7 @@ function TypeCard({
   );
 }
 
-function Row({
-  label,
-  value,
-  muted,
-}: {
-  label: string;
-  value: string;
-  muted?: boolean;
-}) {
+function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className={`flex justify-between ${muted ? "text-[var(--cream)]/60" : ""}`}>
       <span>{label}</span>

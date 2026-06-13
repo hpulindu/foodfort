@@ -2,11 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { AlertCircle, ShoppingBag, X, Plus, Minus, Trash2 } from "lucide-react";
 import { useCart, formatPrice } from "@/lib/cart";
 import { getSoldOutCartItemIds } from "@/lib/menu-availability";
-import {
-  fetchOperationHours,
-  getStoreClosedMessage,
-  isStoreOpen,
-} from "@/lib/operation-hours";
+import { fetchOperationHours, getStoreClosedMessage, isStoreOpen } from "@/lib/operation-hours";
+import { fetchOrderingStatus, getOrderingPausedMessage } from "@/lib/ordering-status";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -33,6 +30,8 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   const [mounted, setMounted] = useState(false);
   const [storeOpen, setStoreOpen] = useState(true);
   const [storeClosedMessage, setStoreClosedMessage] = useState("");
+  const [orderingPaused, setOrderingPaused] = useState(false);
+  const [orderingPausedMessage, setOrderingPausedMessage] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -76,6 +75,26 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    fetchOrderingStatus()
+      .then((status) => {
+        if (cancelled) return;
+        setOrderingPaused(status.paused);
+        setOrderingPausedMessage(getOrderingPausedMessage(status));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOrderingPaused(false);
+          setOrderingPausedMessage("");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -102,10 +121,16 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           <div>
             <p className="eyebrow text-[var(--gold)]">Your Order</p>
             <h2 className="font-display text-2xl mt-1">
-              {items.length === 0 ? "Empty basket" : `${items.length} item${items.length > 1 ? "s" : ""}`}
+              {items.length === 0
+                ? "Empty basket"
+                : `${items.length} item${items.length > 1 ? "s" : ""}`}
             </h2>
           </div>
-          <button onClick={onClose} aria-label="Close cart" className="p-2 hover:text-[var(--gold)]">
+          <button
+            onClick={onClose}
+            aria-label="Close cart"
+            className="p-2 hover:text-[var(--gold)]"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -114,7 +139,9 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           {items.length === 0 ? (
             <div className="text-center py-20">
               <ShoppingBag className="w-12 h-12 mx-auto text-[var(--gold)]/40" />
-              <p className="mt-6 text-sm text-[var(--forest)]/70">Add something delicious from the menu.</p>
+              <p className="mt-6 text-sm text-[var(--forest)]/70">
+                Add something delicious from the menu.
+              </p>
               <Link
                 to="/menu"
                 onClick={onClose}
@@ -125,7 +152,13 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             </div>
           ) : (
             <>
-              {!storeOpen && storeClosedMessage && (
+              {orderingPaused && orderingPausedMessage && (
+                <div className="mb-4 flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-3">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{orderingPausedMessage}</p>
+                </div>
+              )}
+              {!orderingPaused && !storeOpen && storeClosedMessage && (
                 <div className="mb-4 flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-3">
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                   <p>{storeClosedMessage}</p>
@@ -134,61 +167,63 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               {hasSoldOutItems && (
                 <div className="mb-4 flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-3">
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p>
-                    Some items are sold out. Remove them from your cart to continue checkout.
-                  </p>
+                  <p>Some items are sold out. Remove them from your cart to continue checkout.</p>
                 </div>
               )}
               <ul className="divide-y divide-[var(--gold)]/15">
-              {items.map(item => {
-                const soldOut = soldOutIds.includes(item.id);
-                return (
-                <li key={item.id} className={`py-5 flex gap-4 ${soldOut ? "opacity-70" : ""}`}>
-                  <div className="flex-1">
-                    <h3 className="font-display text-lg leading-tight">{item.name}</h3>
-                    {item.extras && item.extras.length > 0 && (
-                      <p className="mt-1 text-xs text-[var(--forest)]/55">
-                        + {item.extras.map((e) => e.name).join(", ")}
-                      </p>
-                    )}
-                    {soldOut && (
-                      <p className="mt-1 eyebrow text-[0.65rem] text-amber-800">Sold out — remove to continue</p>
-                    )}
-                    <p className="mt-1 text-sm text-[var(--forest)]/60">{formatPrice(item.price)} each</p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="flex items-center border border-[var(--gold)]/30">
-                        <button
-                          onClick={() => setQty(item.id, item.qty - 1)}
-                          aria-label="Decrease quantity"
-                          className="w-8 h-8 flex items-center justify-center hover:bg-[var(--gold)]/10"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
-                        <button
-                          onClick={() => setQty(item.id, item.qty + 1)}
-                          aria-label="Increase quantity"
-                          className="w-8 h-8 flex items-center justify-center hover:bg-[var(--gold)]/10"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+                {items.map((item) => {
+                  const soldOut = soldOutIds.includes(item.id);
+                  return (
+                    <li key={item.id} className={`py-5 flex gap-4 ${soldOut ? "opacity-70" : ""}`}>
+                      <div className="flex-1">
+                        <h3 className="font-display text-lg leading-tight">{item.name}</h3>
+                        {item.extras && item.extras.length > 0 && (
+                          <p className="mt-1 text-xs text-[var(--forest)]/55">
+                            + {item.extras.map((e) => e.name).join(", ")}
+                          </p>
+                        )}
+                        {soldOut && (
+                          <p className="mt-1 eyebrow text-[0.65rem] text-amber-800">
+                            Sold out — remove to continue
+                          </p>
+                        )}
+                        <p className="mt-1 text-sm text-[var(--forest)]/60">
+                          {formatPrice(item.price)} each
+                        </p>
+                        <div className="mt-3 flex items-center gap-3">
+                          <div className="flex items-center border border-[var(--gold)]/30">
+                            <button
+                              onClick={() => setQty(item.id, item.qty - 1)}
+                              aria-label="Decrease quantity"
+                              className="w-8 h-8 flex items-center justify-center hover:bg-[var(--gold)]/10"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
+                            <button
+                              onClick={() => setQty(item.id, item.qty + 1)}
+                              aria-label="Increase quantity"
+                              className="w-8 h-8 flex items-center justify-center hover:bg-[var(--gold)]/10"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => remove(item.id)}
+                            aria-label="Remove item"
+                            className="text-[var(--forest)]/50 hover:text-[var(--forest-deep)] ml-auto"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => remove(item.id)}
-                        aria-label="Remove item"
-                        className="text-[var(--forest)]/50 hover:text-[var(--forest-deep)] ml-auto"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="font-display text-lg whitespace-nowrap">
-                    {formatPrice(item.qty * item.price)}
-                  </div>
-                </li>
-              );
-              })}
-            </ul>
+                      <div className="font-display text-lg whitespace-nowrap">
+                        {formatPrice(item.qty * item.price)}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </>
           )}
         </div>
@@ -199,7 +234,11 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               <span className="eyebrow text-[var(--forest)]/70">Subtotal</span>
               <span className="font-display text-2xl">{formatPrice(subtotal)}</span>
             </div>
-            {!storeOpen ? (
+            {orderingPaused ? (
+              <span className="block w-full text-center bg-[var(--forest-deep)]/50 text-[var(--cream)]/70 eyebrow py-4 cursor-not-allowed">
+                Ordering paused
+              </span>
+            ) : !storeOpen ? (
               <span className="block w-full text-center bg-[var(--forest-deep)]/50 text-[var(--cream)]/70 eyebrow py-4 cursor-not-allowed">
                 Currently closed
               </span>

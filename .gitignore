@@ -10,6 +10,9 @@ lerna-debug.log*
 # Android dashboard app — kept local, not published to GitHub
 FoodFort Dashboard App/
 
+# Admin dashboard — kept local, not published to GitHub
+foodfort-admin/
+
 # Local env files (Vite loads from env/ — never commit secrets)
 env/
 

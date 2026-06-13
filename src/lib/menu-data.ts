@@ -3,6 +3,8 @@ export type MenuItem = {
   description?: string;
   price: string;
   badge?: "chef" | "veg";
+  /** Public image URL when set in Firestore */
+  image?: string;
   /** false when marked unavailable in the dashboard */
   available?: boolean;
 };

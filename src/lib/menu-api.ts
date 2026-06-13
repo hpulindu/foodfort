@@ -18,11 +18,13 @@ function normalizeItem(
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.name !== "string") return null;
+  const image = typeof r.image === "string" && r.image.trim() ? r.image.trim() : undefined;
   return {
     name: r.name,
     description: typeof r.description === "string" ? r.description : undefined,
     price: typeof r.price === "number" ? r.price.toFixed(2) : String(r.price ?? ""),
     badge: r.badge === "chef" || r.badge === "veg" ? r.badge : undefined,
+    image,
     available: availability?.[r.name] ?? true,
   };
 }

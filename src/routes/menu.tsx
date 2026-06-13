@@ -139,12 +139,27 @@ function MenuSections({
             {section.items.map((item) => {
               const id = `${section.id}-${item.name}`;
               const soldOut = !isAvailable(item.available);
+              const hasImage = Boolean(item.image);
               return (
                 <li
                   key={item.name}
-                  className={`py-6 lg:py-7 grid grid-cols-[1fr_auto] gap-4 sm:gap-6 items-center group ${soldOut ? "opacity-60" : ""}`}
+                  className={`py-6 lg:py-7 grid gap-4 sm:gap-6 items-center group ${
+                    hasImage
+                      ? "grid-cols-[auto_1fr_auto]"
+                      : "grid-cols-[1fr_auto]"
+                  } ${soldOut ? "opacity-60" : ""}`}
                 >
-                  <div>
+                  {hasImage && (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 shrink-0 overflow-hidden border border-[var(--gold)]/25 bg-[var(--forest)]/5">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className={hasImage ? "min-w-0" : undefined}>
                     <h3 className="font-display text-xl lg:text-2xl text-[var(--forest-deep)]">
                       {item.name}
                       {item.badge && <Badge kind={item.badge} />}

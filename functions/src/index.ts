@@ -1,7 +1,7 @@
-import * as admin from "firebase-admin";
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import Stripe from "stripe";
+import { FieldValue, getDb, Timestamp } from "./firebase-admin-app";
 import {
   assertValidCartItemId,
   assertValidCartItemName,
@@ -10,6 +10,7 @@ import {
   parseAndValidateCheckoutDetails,
 } from "./checkout-validation";
 import { assertStoreIsOpen } from "./operation-hours";
+import { assertOrderingNotPaused } from "./ordering";
 
 export {
   blockPublicSignup,
@@ -18,18 +19,28 @@ export {
   revokeStaffAccess,
 } from "./staff-auth";
 
+export {
+  adminUpdateOrderStatus,
+  adminRefundOrder,
+  adminUpsertMenuSection,
+  adminDeleteMenuSection,
+  adminReorderSections,
+  adminUpsertMenuItem,
+  adminDeleteMenuItem,
+  adminSetItemAvailability,
+  adminUpsertSauce,
+  adminDeleteSauce,
+  adminSetSauceAvailability,
+  adminUpdateOperationHours,
+  adminSetOrderingPaused,
+} from "./admin";
+
 // ─── Secrets (stored in Firebase Secret Manager, never in source) ─────────────
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const stripeConnectedAccountId = defineSecret("STRIPE_CONNECTED_ACCOUNT_ID");
 
-// ─── Firebase Admin (lazy init — avoids deploy-time module load timeouts) ─────
-function getDb() {
-  if (!admin.apps.length) {
-    admin.initializeApp();
-  }
-  return admin.firestore();
-}
+// ─── Firebase Admin (shared init — required for Gen 2 isolated function entry points) ─
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CURRENCY = "aud" as const;
@@ -208,7 +219,7 @@ async function createPaidOrder(
       counterRef,
       {
         count: orderNumber,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
@@ -230,7 +241,7 @@ function buildOrderDoc(
   items: OrderItem[],
   extra?: Record<string, unknown>
 ) {
-  const now = admin.firestore.Timestamp.now();
+  const now = Timestamp.now();
   return {
     customer: {
       name: meta.customerName ?? "",
@@ -296,6 +307,7 @@ export const createPaymentIntent = onCall(
     });
 
     await assertStoreIsOpen(getDb());
+    await assertOrderingNotPaused(getDb());
 
     // Validate each item
     for (const item of data.items) {
@@ -469,6 +481,7 @@ export const confirmPayment = onCall(
     const paymentIntentId = assertValidPaymentIntentId(data.paymentIntentId);
 
     await assertStoreIsOpen(getDb());
+    await assertOrderingNotPaused(getDb());
 
     const stripe = getStripe();
 
@@ -507,7 +520,7 @@ export const confirmPayment = onCall(
         if (!hasItems && verifiedItems.length > 0) {
           await existingDoc.ref.update({
             items: verifiedItems,
-            source: admin.firestore.FieldValue.delete(),
+            source: FieldValue.delete(),
           });
           const updated = (await existingDoc.ref.get()).data();
           return { orderId: existingDoc.id, order: updated };
@@ -612,6 +625,6 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent): Promise<void> {
     failureMessage: pi.last_payment_error?.message ?? null,
     amount: pi.amount,
     currency: pi.currency,
-    failedAt: admin.firestore.Timestamp.now(),
+    failedAt: Timestamp.now(),
   });
 }

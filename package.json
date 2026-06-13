@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "seed:menu": "tsx scripts/seed-menu.ts",
-    "provision:staff": "tsx scripts/provision-staff.ts"
+    "provision:staff": "tsx scripts/provision-staff.ts",
+    "backfill:menu-ids": "tsx scripts/backfill-menu-item-ids.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

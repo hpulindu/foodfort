@@ -8,6 +8,12 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.staff == true;
     }
 
+    // Admin-only access — custom claim set server-side via Admin SDK.
+    // Admin accounts also carry the staff claim.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
     // ── Menu sections ─────────────────────────────────────────────────────────
     // Public read for the customer web app.
     // Staff can update availability fields only.
@@ -38,13 +44,30 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow create: if false;
 
-      allow read: if isStaff();
+      // Staff and admin can read orders. Admin status changes, refunds and any
+      // sensitive field writes go through callable Functions (Admin SDK), which
+      // bypass these rules. Direct client writes are limited to orderStatus.
+      allow read: if isStaff() || isAdmin();
 
       allow update: if isStaff()
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['orderStatus']);
 
       allow delete: if false;
+    }
+
+    // ── Order counters ──────────────────────────────────────────────────────
+    // Daily order-number counters. Written only by Functions (Admin SDK).
+    match /orderCounters/{doc} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── Audit logs ──────────────────────────────────────────────────────────
+    // Written by admin callable Functions (Admin SDK). Admin can read.
+    match /auditLogs/{doc} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // ── Store settings ────────────────────────────────────────────────────────

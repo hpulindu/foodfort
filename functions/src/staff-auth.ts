@@ -1,15 +1,9 @@
-import * as admin from "firebase-admin";
 import { beforeUserCreated, beforeUserSignedIn } from "firebase-functions/v2/identity";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import type { UserRecord } from "firebase-admin/auth";
+import { getAuthAdmin } from "./firebase-admin-app";
 
 const FUNCTION_REGION = "us-central1";
-
-function getAuth(): admin.auth.Auth {
-  if (!admin.apps.length) {
-    admin.initializeApp();
-  }
-  return admin.auth();
-}
 
 function isStaffClaim(claims: Record<string, unknown> | undefined): boolean {
   return claims?.staff === true;
@@ -72,8 +66,8 @@ export const provisionStaffAccount = onCall(
       );
     }
 
-    const auth = getAuth();
-    let user: admin.auth.UserRecord;
+    const auth = getAuthAdmin();
+    let user: UserRecord;
     try {
       user = await auth.createUser({
         email,
@@ -120,7 +114,7 @@ export const revokeStaffAccess = onCall(
       throw new HttpsError("failed-precondition", "You cannot revoke your own access.");
     }
 
-    const auth = getAuth();
+    const auth = getAuthAdmin();
     try {
       await auth.setCustomUserClaims(uid, { staff: false, admin: false });
       await auth.revokeRefreshTokens(uid);
