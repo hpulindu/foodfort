@@ -8,7 +8,7 @@ import { Ornament } from "@/components/Ornament";
 import { MenuSkeleton } from "@/components/MenuSkeleton";
 import { MenuItemThumbnail } from "@/components/MenuItemThumbnail";
 import { ExtrasModal as ItemCustomizeModal } from "@/components/ExtrasModal";
-import { restaurant, type MenuItem, type MenuSection, type Sauce } from "@/lib/menu-data";
+import { type MenuItem, type MenuSection, type Sauce } from "@/lib/menu-data";
 import { fetchMenu, fetchSauces } from "@/lib/menu-api";
 import { getExtrasFromMenu, isExtrasSection } from "@/lib/menu-config";
 import { getMenuItemDisplayPrice } from "@/lib/menu-item-options";
@@ -371,23 +371,6 @@ function MenuPage() {
               <SaucesBlock sauces={saucesQuery.data} isPending={saucesQuery.isPending} />
             </div>
           </>
-        )}
-
-        {/* CTA */}
-        {data && !isError && (
-          <div className="mx-auto max-w-5xl mt-32 text-center">
-            <Ornament className="w-40 mx-auto text-[var(--gold)]" />
-            <h3 className="mt-8 font-display text-[clamp(2rem,4vw,3rem)] text-[var(--forest-deep)]">
-              Ready to order?
-            </h3>
-            <p className="mt-4 text-[var(--forest)]/70">Call us — we'll have it ready.</p>
-            <a
-              href={restaurant.phoneHref}
-              className="mt-8 inline-flex items-center gap-3 bg-[var(--forest-deep)] text-[var(--cream)] eyebrow px-8 py-4 hover:bg-[var(--forest)] transition-colors"
-            >
-              {restaurant.phone}
-            </a>
-          </div>
         )}
       </div>
 
