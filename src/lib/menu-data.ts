@@ -7,6 +7,21 @@ export type MenuItem = {
   image?: string;
   /** false when marked unavailable in the dashboard */
   available?: boolean;
+  /** Size / style options with their own prices */
+  variants?: MenuItemVariant[];
+  /** When enabled, customers pick up to maxSauces from the sauces list */
+  sauceSelection?: MenuItemSauceSelection;
+};
+
+export type MenuItemVariant = {
+  id?: string;
+  name: string;
+  price: number;
+};
+
+export type MenuItemSauceSelection = {
+  enabled: boolean;
+  maxSauces: number;
 };
 
 export type MenuSection = {

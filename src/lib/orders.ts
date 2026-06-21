@@ -50,7 +50,7 @@ export async function getStripeConnectConfig(): Promise<StripeConnectConfig> {
 // The connected account ID is returned here so Stripe.js can use it — it is
 // never a secret key.
 
-export interface PaymentExtraInput {
+export interface PaymentModifierInput {
   name: string;
 }
 
@@ -60,7 +60,9 @@ export interface CreatePaymentIntentRequest {
     name: string;
     baseName?: string;
     qty: number;
-    extras?: PaymentExtraInput[];
+    extras?: PaymentModifierInput[];
+    variant?: PaymentModifierInput;
+    sauces?: PaymentModifierInput[];
   }>;
   orderType: OrderType;
   customerName: string;

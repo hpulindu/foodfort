@@ -3,14 +3,13 @@ import { useCallback } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
+import { PromiseSection } from "@/components/PromiseSection";
+import { SignaturesSection } from "@/components/SignaturesSection";
 import heroCover from "@/assets/FoodFort_Cover.jpg";
 import heroLogo from "@/assets/Hero Section Logo.png";
-import butterChickenPizza from "@/assets/FoodFort_ButterChickenPizza.jpg";
-import smashedBeefBurger from "@/assets/FoodFort_SmashedBeefBurger.jpg";
-import chickenKebab from "@/assets/FoodFort_ChickenKebab.jpg";
-import chickenLoadedFries from "@/assets/FoodFort_ChickenLoadedFries.jpg";
 import mixedMeatBox from "@/assets/FoodFort_MixedMeatBox.jpg";
 import spinachGozleme from "@/assets/FoodFort_SpinachGozleme.jpg";
+import tuesdaySpecialPoster from "@/assets/FoodFort_TuesdaySpecialPoster.png";
 import { restaurant } from "@/lib/menu-data";
 
 const TICKER_ITEMS = [
@@ -52,16 +51,9 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-const signatures = [
-  { name: "Butter Chicken Pizza", price: "24", image: butterChickenPizza, blurb: "Butter chicken sauce, cheese, onion, chicken, tomato and goat cheese on a crisp base." },
-  { name: "Smashed Beef Burger", price: "24", image: smashedBeefBurger, blurb: "Aged beef, melted cheese, caramelised onion on brioche." },
-  { name: "Chicken Kebab", price: "16", image: chickenKebab, blurb: "Marinated chicken, fresh salad and house sauce in warm flatbread." },
-  { name: "Chicken Loaded Fries", price: "16.99", image: chickenLoadedFries, blurb: "Crisp fries, peri chicken, molten cheese." },
-];
-
 function HomePage() {
   const manifestoReveal = useReveal();
-  const pillarsReveal   = useReveal();
+  const specialsReveal  = useReveal();
   const signaturesReveal = useReveal();
   const storyReveal     = useReveal();
 
@@ -201,79 +193,75 @@ function HomePage() {
 
       </section>
 
-      {/* MANIFESTO */}
-      <section ref={manifestoReveal} className="reveal py-32 lg:py-48 px-6 lg:px-10">
-        <div className="mx-auto max-w-4xl text-center">
-          <Ornament className="w-40 mx-auto text-[var(--gold)]" />
-          <p className="eyebrow text-[var(--forest)] mt-8">The Food Fort Promise</p>
-          <h2 className="mt-8 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-tight text-[var(--forest-deep)]">
-            A neighbourhood kitchen built on{" "}
-            <span className="italic text-[var(--forest)]">flavour that comforts</span>{" "}
-            and quality you can taste.
-          </h2>
-          <p className="mt-10 max-w-2xl mx-auto text-lg leading-relaxed text-[var(--forest)]/80">
-            Every dough is proved on site. Every sauce simmered slow. We cook for
-            cravings, generous, honest food made with care, never shortcuts.
-          </p>
-        </div>
-      </section>
+      <PromiseSection revealRef={manifestoReveal} />
 
-      {/* PILLARS */}
-      <section ref={pillarsReveal} className="reveal px-6 lg:px-10 pb-32 lg:pb-48">
-        <div className="mx-auto max-w-7xl grid md:grid-cols-3 gap-px bg-[var(--gold)]/30 border border-[var(--gold)]/30">
-          {[
-            { kicker: "01", title: "Flavour that comforts", body: "Recipes refined over years — the warm, familiar food you crave." },
-            { kicker: "02", title: "For every craving", body: "Pizzas, kebabs, gozleme, tacos, burgers. One kitchen. No compromises." },
-            { kicker: "03", title: "Quality you can taste", body: "100% halal, freshly prepared daily. Real ingredients only." },
-          ].map((p) => (
-            <div key={p.kicker} className="bg-[var(--cream)] p-12 lg:p-16">
-              <span className="font-display text-5xl text-[var(--gold)]">{p.kicker}</span>
-              <h3 className="mt-6 font-display text-2xl text-[var(--forest-deep)]">{p.title}</h3>
-              <p className="mt-4 text-sm leading-relaxed text-[var(--forest)]/75">{p.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* TUESDAY SPECIALS */}
+      <section ref={specialsReveal} className="reveal bg-white py-24 lg:py-36 px-6 lg:px-10">
+        <div className="mx-auto max-w-7xl grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16 xl:gap-24 items-center">
+          {/* Poster + testimonial */}
+          <div className="relative mx-auto w-full max-w-md lg:max-w-none pb-16 sm:pb-20 lg:pb-0">
+            <div className="relative">
+              <div
+                className="relative bg-[var(--secondary)]"
+                style={{ boxShadow: "0 24px 48px rgba(15,16,18,0.12), 0 0 0 1px rgba(188,106,47,0.08) inset" }}
+              >
+                <img
+                  src={tuesdaySpecialPoster}
+                  alt="Food Fort Tuesday Surprise Special poster"
+                  loading="lazy"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
 
-      {/* SIGNATURES */}
-      <section ref={signaturesReveal} className="reveal bg-[var(--forest-deep)] text-[var(--cream)] py-32 lg:py-48 relative overflow-hidden grain">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 relative">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-20">
-            <div>
-              <p className="eyebrow text-[var(--gold)]">Signatures</p>
-              <h2 className="mt-6 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-tight max-w-2xl">
-                The dishes our regulars come back for.
-              </h2>
+              <blockquote
+                className="absolute bottom-0 left-1/2 z-10 w-[88%] max-w-[320px] -translate-x-1/2 translate-y-[72%] bg-[var(--cream)] border border-[var(--gold)]/20 px-4 py-3.5 text-center lg:bottom-0 lg:left-auto lg:right-0 lg:w-[175px] lg:max-w-[260px] lg:translate-x-[60%] lg:translate-y-[60%] lg:text-left lg:px-4 lg:py-3.5"
+                style={{ boxShadow: "0 16px 40px rgba(15,16,18,0.1)" }}
+              >
+                <p className="font-display italic text-[var(--forest-deep)] text-sm leading-snug lg:text-[0.8125rem]">
+                  &ldquo;Always a delightful surprise, highly recommend dropping by on a Tuesday!&rdquo;
+                </p>
+              </blockquote>
             </div>
-            <Link
-              to="/menu"
-              className="eyebrow text-[var(--gold)] border-b border-[var(--gold)]/40 pb-1 hover:border-[var(--gold)] self-start"
-            >
-              See the full menu →
-            </Link>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
-            {signatures.map((s) => (
-              <article key={s.name} className="group cursor-pointer">
-                <div className="aspect-[4/5] overflow-hidden bg-[var(--forest)]">
-                  <img
-                    src={s.image}
-                    alt={s.name}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
-                  />
-                </div>
-                <div className="mt-6 flex items-baseline justify-between gap-4">
-                  <h3 className="font-display text-xl text-[var(--cream)]">{s.name}</h3>
-                  <span className="font-display text-lg text-[var(--gold)]">${s.price}</span>
-                </div>
-                <p className="mt-2 text-sm text-[var(--cream)]/60 leading-relaxed">{s.blurb}</p>
-              </article>
-            ))}
+          {/* Copy */}
+          <div className="lg:pl-4 mt-1 sm:mt-2 lg:mt-0 pt-2 sm:pt-3 lg:pt-0">
+            <span className="eyebrow text-[var(--gold)]">
+              Every Tuesday
+            </span>
+
+            <h2 className="mt-6 font-display text-[clamp(2.25rem,4.5vw,3.75rem)] leading-[1.05] text-[var(--forest-deep)]">
+              Tuesday Surprise Special
+            </h2>
+
+            <p className="mt-3 font-display text-xl sm:text-2xl italic text-[var(--gold)]">
+              A new special every week
+            </p>
+
+            <p className="mt-8 text-base sm:text-lg leading-relaxed text-[var(--forest)]/80 max-w-lg">
+              Every Tuesday, Food Fort serves a rotating special that changes weekly.
+              From customer favourites to limited-time chef picks, there is always
+              something different to try. Visit us in-store to see what&apos;s cooking
+              this week.
+            </p>
+
+            <div className="mt-10 flex flex-col items-start gap-4">
+              <Link
+                to="/visit"
+                className="group inline-flex items-center gap-2.5 bg-[var(--gold)] hover:bg-[var(--gold-soft)] text-[var(--gold-foreground)] eyebrow px-8 py-4 rounded-full transition-colors duration-200 cursor-pointer"
+              >
+                Visit Us Today
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </Link>
+              <p className="eyebrow text-[var(--forest)]/45 text-[0.62rem] tracking-[0.28em]">
+                Available every Tuesday, while stocks last
+              </p>
+            </div>
           </div>
         </div>
       </section>
+
+      <SignaturesSection revealRef={signaturesReveal} />
 
       {/* STORY / SPLIT */}
       <section ref={storyReveal} className="reveal py-32 lg:py-48 px-6 lg:px-10">

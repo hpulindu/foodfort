@@ -6,10 +6,12 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import { MenuSkeleton } from "@/components/MenuSkeleton";
-import { ExtrasModal } from "@/components/ExtrasModal";
+import { ExtrasModal as ItemCustomizeModal } from "@/components/ExtrasModal";
 import { restaurant, type MenuItem, type MenuSection, type Sauce } from "@/lib/menu-data";
 import { fetchMenu, fetchSauces } from "@/lib/menu-api";
-import { getExtrasFromMenu, isExtrasSection, supportsExtras } from "@/lib/menu-config";
+import { getExtrasFromMenu, isExtrasSection } from "@/lib/menu-config";
+import { getMenuItemDisplayPrice } from "@/lib/menu-item-options";
+import { addMenuItemOrCustomize } from "@/lib/menu-item-cart";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 
@@ -46,39 +48,33 @@ function isAvailable(available?: boolean) {
 
 function AddBtn({
   id,
-  name,
-  price,
-  available = true,
+  item,
   sectionId,
   extras,
-  onOpenExtras,
+  onCustomize,
 }: {
   id: string;
-  name: string;
-  price: number;
-  available?: boolean;
+  item: MenuItem;
   sectionId: string;
   extras: MenuItem[];
-  onOpenExtras: (item: { id: string; name: string; price: number }) => void;
+  onCustomize: (payload: { id: string; item: MenuItem; sectionId: string }) => void;
 }) {
   const { add } = useCart();
-  if (!isAvailable(available)) {
+  if (!isAvailable(item.available)) {
     return <SoldOutLabel />;
   }
-
-  const canCustomize = supportsExtras(sectionId) && extras.length > 0;
 
   return (
     <button
       onClick={() => {
-        if (canCustomize) {
-          onOpenExtras({ id, name, price });
-          return;
-        }
-        add({ id, name, baseName: name, price });
-        toast.success(`${name} added`, { duration: 1500 });
+        addMenuItemOrCustomize({
+          target: { id, item, sectionId },
+          extrasCount: extras.length,
+          add,
+          onCustomize,
+        });
       }}
-      aria-label={`Add ${name} to cart`}
+      aria-label={`Add ${item.name} to cart`}
       className="inline-flex items-center gap-1.5 eyebrow text-xs text-[var(--cream)] bg-[var(--forest-deep)] hover:bg-[var(--gold)] hover:text-[var(--gold-foreground)] px-3 py-2 transition-colors"
     >
       <Plus className="w-3 h-3" />
@@ -107,11 +103,11 @@ function SectionNav({ sections }: { sections: MenuSection[] }) {
 function MenuSections({
   sections,
   extras,
-  onOpenExtras,
+  onCustomize,
 }: {
   sections: MenuSection[];
   extras: MenuItem[];
-  onOpenExtras: (item: { id: string; name: string; price: number }) => void;
+  onCustomize: (payload: { id: string; item: MenuItem; sectionId: string }) => void;
 }) {
   return (
     <div className="mx-auto max-w-5xl space-y-24 lg:space-y-32">
@@ -171,15 +167,15 @@ function MenuSections({
                     )}
                   </div>
                   <div className="flex items-center gap-3 sm:gap-5 whitespace-nowrap">
-                    <span className="font-display text-xl text-[var(--forest-deep)]">${item.price}</span>
+                    <span className="font-display text-xl text-[var(--forest-deep)]">
+                      {getMenuItemDisplayPrice(item)}
+                    </span>
                     <AddBtn
                       id={id}
-                      name={item.name}
-                      price={parseFloat(item.price)}
-                      available={item.available}
+                      item={item}
                       sectionId={section.id}
                       extras={extras}
-                      onOpenExtras={onOpenExtras}
+                      onCustomize={onCustomize}
                     />
                   </div>
                 </li>
@@ -288,10 +284,10 @@ function MenuError({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: b
 
 function MenuPage() {
   const { add } = useCart();
-  const [extrasTarget, setExtrasTarget] = useState<{
+  const [customizeTarget, setCustomizeTarget] = useState<{
     id: string;
-    name: string;
-    price: number;
+    item: MenuItem;
+    sectionId: string;
   } | null>(null);
 
   const { data, isPending, isError, refetch, isFetching } = useQuery({
@@ -346,7 +342,7 @@ function MenuPage() {
             <MenuSections
               sections={displaySections}
               extras={menuExtras}
-              onOpenExtras={setExtrasTarget}
+              onCustomize={setCustomizeTarget}
             />
             <div className="mx-auto max-w-5xl mt-24 lg:mt-32">
               <SaucesBlock sauces={saucesQuery.data} isPending={saucesQuery.isPending} />
@@ -372,18 +368,21 @@ function MenuPage() {
         )}
       </div>
 
-      <ExtrasModal
-        open={extrasTarget != null}
-        itemName={extrasTarget?.name ?? ""}
-        baseId={extrasTarget?.id ?? ""}
-        basePrice={extrasTarget?.price ?? 0}
-        extras={menuExtras}
-        onClose={() => setExtrasTarget(null)}
-        onConfirm={(item) => {
-          add(item);
-          toast.success(`${item.name} added`, { duration: 1500 });
-        }}
-      />
+      {customizeTarget && (
+        <ItemCustomizeModal
+          open={customizeTarget != null}
+          item={customizeTarget.item}
+          baseId={customizeTarget.id}
+          sectionId={customizeTarget.sectionId}
+          sauces={saucesQuery.data ?? []}
+          extras={menuExtras}
+          onClose={() => setCustomizeTarget(null)}
+          onConfirm={(cartItem) => {
+            add(cartItem);
+            toast.success(`${cartItem.name} added`, { duration: 1500 });
+          }}
+        />
+      )}
 
       <SiteFooter />
     </div>

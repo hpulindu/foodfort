@@ -328,6 +328,8 @@ function CheckoutForm() {
           baseName: i.baseName,
           qty: i.qty,
           extras: i.extras?.map((e) => ({ name: e.name })),
+          variant: i.variant ? { name: i.variant.name } : undefined,
+          sauces: i.sauces?.map((s) => ({ name: s.name })),
         })),
         orderType: sanitized.orderType,
         customerName: sanitized.customerName,

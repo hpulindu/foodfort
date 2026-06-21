@@ -15,6 +15,10 @@ export type CartItem = {
   price: number;
   qty: number;
   extras?: CartExtra[];
+  /** Selected size / variant */
+  variant?: CartExtra;
+  /** Sauces chosen for this item (not standalone sauce line items) */
+  sauces?: CartExtra[];
 };
 
 export function getBaseCartItemId(id: string): string {
@@ -22,19 +26,49 @@ export function getBaseCartItemId(id: string): string {
   return idx === -1 ? id : id.slice(0, idx);
 }
 
-export function buildCartItemId(baseId: string, extras: CartExtra[]): string {
-  if (extras.length === 0) return baseId;
-  const extraKey = [...extras].map((e) => e.id).sort().join(",");
-  return `${baseId}--${extraKey}`;
+export function buildCartItemId(
+  baseId: string,
+  extras: CartExtra[],
+  variant?: CartExtra,
+  sauces: CartExtra[] = [],
+): string {
+  if (!variant && sauces.length === 0) {
+    if (extras.length === 0) return baseId;
+    const extraKey = [...extras].map((e) => e.id).sort().join(",");
+    return `${baseId}--${extraKey}`;
+  }
+
+  const parts = [baseId];
+  if (variant) parts.push(`v:${variant.id}`);
+  if (sauces.length) parts.push(`s:${[...sauces].map((s) => s.id).sort().join(",")}`);
+  if (extras.length) parts.push(`e:${[...extras].map((e) => e.id).sort().join(",")}`);
+  return parts.join("--");
 }
 
-export function formatCartItemName(baseName: string, extras: CartExtra[]): string {
-  if (extras.length === 0) return baseName;
-  return `${baseName} (+ ${extras.map((e) => e.name).join(", ")})`;
+export function formatCartItemName(
+  baseName: string,
+  extras: CartExtra[],
+  variant?: CartExtra,
+  sauces: CartExtra[] = [],
+): string {
+  let name = variant ? `${baseName} (${variant.name})` : baseName;
+  const parts = [
+    ...(sauces.length ? [sauces.map((s) => s.name).join(", ")] : []),
+    ...(extras.length ? [extras.map((e) => e.name).join(", ")] : []),
+  ];
+  if (parts.length) name = `${name} (+ ${parts.join("; ")})`;
+  return name;
 }
 
-export function cartItemUnitPrice(basePrice: number, extras: CartExtra[]): number {
-  return +(basePrice + extras.reduce((sum, e) => sum + e.price, 0)).toFixed(2);
+export function cartItemUnitPrice(
+  basePrice: number,
+  extras: CartExtra[],
+  variant?: CartExtra,
+  sauces: CartExtra[] = [],
+): number {
+  const start = variant?.price ?? basePrice;
+  const addOns = [...(sauces ?? []), ...extras].reduce((sum, entry) => sum + entry.price, 0);
+  return +(start + addOns).toFixed(2);
 }
 
 function normalizeCartItem(item: CartItem): CartItem {
@@ -42,6 +76,7 @@ function normalizeCartItem(item: CartItem): CartItem {
     ...item,
     baseName: item.baseName ?? item.name,
     extras: item.extras ?? [],
+    sauces: item.sauces ?? [],
   };
 }
 
