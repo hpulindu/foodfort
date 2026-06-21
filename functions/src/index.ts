@@ -27,6 +27,8 @@ export {
   adminReorderSections,
   adminUpsertMenuItem,
   adminDeleteMenuItem,
+  adminReorderMenuItems,
+  adminMoveMenuItem,
   adminSetItemAvailability,
   adminUpsertSauce,
   adminDeleteSauce,
@@ -82,7 +84,7 @@ function rethrowStripeError(err: unknown): never {
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface CartExtraInput {
+interface CartModifierInput {
   name: string;
 }
 
@@ -91,8 +93,16 @@ interface CartItemInput {
   name: string;
   baseName?: string;
   qty: number;
-  extras?: CartExtraInput[];
+  extras?: CartModifierInput[];
+  variant?: CartModifierInput;
+  sauces?: CartModifierInput[];
 }
+
+type MenuItemCatalogEntry = {
+  price: number;
+  variants: Map<string, number>;
+  sauceSelection: { maxSauces: number } | null;
+};
 
 interface CreatePaymentIntentData {
   items: CartItemInput[];
@@ -322,6 +332,12 @@ export const createPaymentIntent = onCall(
       for (const extra of item.extras ?? []) {
         assertValidCartItemName(extra.name);
       }
+      if (item.variant) {
+        assertValidCartItemName(item.variant.name);
+      }
+      for (const sauce of item.sauces ?? []) {
+        assertValidCartItemName(sauce.name);
+      }
     }
 
     // Fetch authoritative menu prices and availability from Firestore
@@ -332,6 +348,7 @@ export const createPaymentIntent = onCall(
 
     const priceMap = new Map<string, number>();
     const availabilityMap = new Map<string, boolean>();
+    const catalogMap = new Map<string, MenuItemCatalogEntry>();
     sectionsSnap.forEach((doc) => {
       const section = doc.data();
       const availability = section.availability as Record<string, boolean> | undefined;
@@ -347,6 +364,35 @@ export const createPaymentIntent = onCall(
               priceMap.set(key, price);
             }
             availabilityMap.set(key, availability?.[item.name] !== false);
+
+            const variants = new Map<string, number>();
+            if (Array.isArray(item.variants)) {
+              for (const variant of item.variants) {
+                if (typeof variant?.name !== "string") continue;
+                const variantPrice =
+                  typeof variant.price === "number"
+                    ? variant.price
+                    : parseFloat(variant.price);
+                if (!Number.isFinite(variantPrice)) continue;
+                variants.set(variant.name.toLowerCase().trim(), +variantPrice.toFixed(2));
+              }
+            }
+
+            let sauceSelection: MenuItemCatalogEntry["sauceSelection"] = null;
+            const rawSauceSelection = item.sauceSelection as
+              | { enabled?: boolean; maxSauces?: number }
+              | undefined;
+            if (rawSauceSelection?.enabled === true) {
+              const maxSauces =
+                typeof rawSauceSelection.maxSauces === "number"
+                  ? Math.floor(rawSauceSelection.maxSauces)
+                  : 1;
+              sauceSelection = {
+                maxSauces: Math.min(10, Math.max(1, maxSauces)),
+              };
+            }
+
+            catalogMap.set(key, { price: priceMap.get(key) ?? 0, variants, sauceSelection });
           }
         }
       }
@@ -390,8 +436,9 @@ export const createPaymentIntent = onCall(
       }
 
       const baseName = (item.baseName ?? item.name).toLowerCase().trim();
+      const catalog = catalogMap.get(baseName);
       const basePrice = priceMap.get(baseName);
-      if (basePrice === undefined) {
+      if (basePrice === undefined || !catalog) {
         throw new HttpsError("invalid-argument", `Item not found in menu: "${item.name}". Please refresh and try again.`);
       }
       if (availabilityMap.get(baseName) === false) {
@@ -399,6 +446,43 @@ export const createPaymentIntent = onCall(
       }
 
       let unitPrice = basePrice;
+      if (catalog.variants.size > 0) {
+        const variantName = item.variant?.name?.toLowerCase().trim();
+        if (!variantName) {
+          throw new HttpsError("invalid-argument", `"${item.baseName ?? item.name}" requires a size or option.`);
+        }
+        const variantPrice = catalog.variants.get(variantName);
+        if (variantPrice === undefined) {
+          throw new HttpsError("invalid-argument", `Invalid option for "${item.baseName ?? item.name}".`);
+        }
+        unitPrice = variantPrice;
+      } else if (item.variant?.name) {
+        throw new HttpsError("invalid-argument", `"${item.baseName ?? item.name}" does not support options.`);
+      }
+
+      const selectedSauces = item.sauces ?? [];
+      if (selectedSauces.length > 0) {
+        if (!catalog.sauceSelection) {
+          throw new HttpsError("invalid-argument", `"${item.baseName ?? item.name}" does not allow sauce selection.`);
+        }
+        if (selectedSauces.length > catalog.sauceSelection.maxSauces) {
+          throw new HttpsError(
+            "invalid-argument",
+            `Too many sauces selected for "${item.baseName ?? item.name}".`,
+          );
+        }
+        for (const sauce of selectedSauces) {
+          const sauceKey = sauce.name.toLowerCase().trim();
+          if (!saucePriceMap.has(sauceKey)) {
+            throw new HttpsError("invalid-argument", `Sauce not found: "${sauce.name}". Please refresh and try again.`);
+          }
+          if (sauceAvailabilityMap.get(sauceKey) === false) {
+            throw new HttpsError("invalid-argument", `"${sauce.name}" is currently sold out. Please refresh and try again.`);
+          }
+          unitPrice += saucePriceMap.get(sauceKey) ?? 0;
+        }
+      }
+
       for (const extra of item.extras ?? []) {
         const extraKey = extra.name.toLowerCase().trim();
         const extraPrice = priceMap.get(extraKey);

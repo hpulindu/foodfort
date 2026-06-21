@@ -343,7 +343,58 @@ type MenuItemInput = {
   price?: number;
   badge?: string | null;
   image?: string | null;
+  variants?: Array<{ id?: string; name?: string; price?: number }>;
+  sauceSelection?: { enabled?: boolean; maxSauces?: number } | null;
 };
+
+type StoredMenuItemVariant = { id: string; name: string; price: number };
+type StoredSauceSelection = { enabled: true; maxSauces: number };
+
+function parseItemVariants(raw: unknown): StoredMenuItemVariant[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  return raw.map((entry, index) => {
+    const variant = entry as { id?: string; name?: string; price?: unknown };
+    const name = asString(variant.name, `variants[${index}].name`, 80);
+    const price = asPrice(variant.price, `variants[${index}].price`);
+    const id =
+      variant.id && typeof variant.id === "string" && variant.id.trim()
+        ? variant.id.trim()
+        : `${slugify(name) || `variant-${index}`}`;
+    return { id, name, price };
+  });
+}
+
+function parseItemSauceSelection(raw: unknown): StoredSauceSelection | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const selection = raw as { enabled?: boolean; maxSauces?: unknown };
+  if (selection.enabled !== true) return undefined;
+  const max =
+    typeof selection.maxSauces === "number"
+      ? Math.floor(selection.maxSauces)
+      : 1;
+  return { enabled: true, maxSauces: Math.min(10, Math.max(1, max)) };
+}
+
+function findItemIndex(items: MenuItemInput[], ref: string): number {
+  return items.findIndex((it) => it.id === ref || it.name === ref);
+}
+
+function reorderMenuItemsList(items: MenuItemInput[], order: string[]): MenuItemInput[] {
+  if (order.length !== items.length) {
+    throw new HttpsError("invalid-argument", "order must include every item in the section.");
+  }
+  const reordered: MenuItemInput[] = [];
+  const used = new Set<number>();
+  for (const ref of order) {
+    const idx = findItemIndex(items, ref);
+    if (idx < 0 || used.has(idx)) {
+      throw new HttpsError("invalid-argument", "Invalid item order.");
+    }
+    used.add(idx);
+    reordered.push(items[idx]);
+  }
+  return reordered;
+}
 
 export const adminUpsertMenuItem = onCall(callOpts, async (request) => {
   const identity = assertAdmin(request);
@@ -370,6 +421,8 @@ export const adminUpsertMenuItem = onCall(callOpts, async (request) => {
     raw.id && typeof raw.id === "string" && raw.id.trim()
       ? raw.id.trim()
       : `item-${Math.random().toString(36).slice(2, 10)}`;
+  const variants = parseItemVariants(raw.variants);
+  const sauceSelection = parseItemSauceSelection(raw.sauceSelection);
 
   const ref = getDb().collection("menuSections").doc(sectionId);
   const sectionSnap = await ref.get();
@@ -385,7 +438,21 @@ export const adminUpsertMenuItem = onCall(callOpts, async (request) => {
     const section = snap.data() as FirebaseFirestore.DocumentData;
     const items: MenuItemInput[] = Array.isArray(section.items) ? section.items : [];
 
-    const newItem = { id: itemId, name, description, price, badge, image };
+    const newItem: Record<string, unknown> = {
+      id: itemId,
+      name,
+      description,
+      price,
+      badge,
+      image,
+    };
+    // FieldValue.delete() cannot be used inside array elements — omit keys to clear them.
+    if (variants?.length) {
+      newItem.variants = variants;
+    }
+    if (sauceSelection) {
+      newItem.sauceSelection = sauceSelection;
+    }
     const idx = items.findIndex((it) => it.id === itemId);
     if (idx >= 0) {
       items[idx] = newItem;
@@ -437,6 +504,94 @@ export const adminDeleteMenuItem = onCall(callOpts, async (request) => {
   });
 
   await writeAuditLog(identity, "menu.item.delete", sectionId, { itemId });
+  return { ok: true as const };
+});
+
+export const adminReorderMenuItems = onCall(callOpts, async (request) => {
+  const identity = assertAdmin(request);
+  const data = request.data as { sectionId?: string; order?: unknown };
+  const sectionId = asString(data.sectionId, "sectionId", 120);
+  const order = data.order;
+  if (!Array.isArray(order) || order.some((ref) => typeof ref !== "string")) {
+    throw new HttpsError("invalid-argument", "order must be an array of item IDs.");
+  }
+
+  const ref = getDb().collection("menuSections").doc(sectionId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new HttpsError("not-found", "Section not found.");
+  }
+
+  const section = snap.data() as FirebaseFirestore.DocumentData;
+  const items: MenuItemInput[] = Array.isArray(section.items) ? section.items : [];
+  const reordered = reorderMenuItemsList(items, order as string[]);
+
+  await ref.update({ items: reordered });
+  await writeAuditLog(identity, "menu.item.reorder", sectionId, { count: reordered.length });
+  return { ok: true as const };
+});
+
+export const adminMoveMenuItem = onCall(callOpts, async (request) => {
+  const identity = assertAdmin(request);
+  const data = request.data as {
+    fromSectionId?: string;
+    toSectionId?: string;
+    itemId?: string;
+  };
+  const fromSectionId = asString(data.fromSectionId, "fromSectionId", 120);
+  const toSectionId = asString(data.toSectionId, "toSectionId", 120);
+  const itemId = asString(data.itemId, "itemId", 160);
+
+  if (fromSectionId === toSectionId) {
+    throw new HttpsError("invalid-argument", "Source and target section must differ.");
+  }
+
+  const db = getDb();
+  const fromRef = db.collection("menuSections").doc(fromSectionId);
+  const toRef = db.collection("menuSections").doc(toSectionId);
+
+  const [fromSnap, toSnap] = await Promise.all([fromRef.get(), toRef.get()]);
+  if (!fromSnap.exists) {
+    throw new HttpsError("not-found", "Source section not found.");
+  }
+  if (!toSnap.exists) {
+    throw new HttpsError("not-found", "Target section not found.");
+  }
+
+  const fromSection = fromSnap.data() as FirebaseFirestore.DocumentData;
+  const toSection = toSnap.data() as FirebaseFirestore.DocumentData;
+  const fromItems: MenuItemInput[] = Array.isArray(fromSection.items) ? [...fromSection.items] : [];
+  const toItems: MenuItemInput[] = Array.isArray(toSection.items) ? [...toSection.items] : [];
+
+  const idx = findItemIndex(fromItems, itemId);
+  if (idx < 0) {
+    throw new HttpsError("not-found", "Item not found in source section.");
+  }
+
+  const [moved] = fromItems.splice(idx, 1);
+  toItems.push(moved);
+
+  const fromAvailability = {
+    ...((fromSection.availability as Record<string, boolean> | undefined) ?? {}),
+  };
+  const toAvailability = {
+    ...((toSection.availability as Record<string, boolean> | undefined) ?? {}),
+  };
+  if (moved.name && Object.prototype.hasOwnProperty.call(fromAvailability, moved.name)) {
+    toAvailability[moved.name] = fromAvailability[moved.name];
+    delete fromAvailability[moved.name];
+  }
+
+  const batch = db.batch();
+  batch.update(fromRef, { items: fromItems, availability: fromAvailability });
+  batch.update(toRef, { items: toItems, availability: toAvailability });
+  await batch.commit();
+
+  await writeAuditLog(identity, "menu.item.move", fromSectionId, {
+    itemId,
+    toSectionId,
+    itemName: moved.name ?? null,
+  });
   return { ok: true as const };
 });
 
