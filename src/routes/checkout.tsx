@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import type { StripeCardElementChangeEvent } from "@stripe/stripe-js";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useCart, formatPrice, serviceChargeFor, cardProcessingFeeFor } from "@/lib/cart";
@@ -203,6 +204,7 @@ function CheckoutForm() {
   const [touched, setTouched] = useState<Partial<Record<CheckoutField, boolean>>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [storeOpen, setStoreOpen] = useState(true);
   const [storeClosedMessage, setStoreClosedMessage] = useState("");
@@ -287,8 +289,20 @@ function CheckoutForm() {
   const sauceLimitIssue = useMemo(() => validateStandaloneSauceCart(items), [items]);
   const hasSauceLimitIssue = !sauceLimitIssue.ok;
 
-  const canPay =
+  const canPayBase =
     items.length > 0 && !hasSoldOutItems && !hasSauceLimitIssue && storeOpen && !orderingPaused;
+  const detailsComplete = validation.ok;
+
+  const canPay = canPayBase && detailsComplete && cardComplete && Boolean(stripe);
+
+  function handleCardChange(event: StripeCardElementChangeEvent) {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setCardError(event.error.message);
+      return;
+    }
+    setCardError(null);
+  }
 
   function markTouched(field: CheckoutField) {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
@@ -557,7 +571,7 @@ function CheckoutForm() {
             <div>
               <Label>Card details</Label>
               <div className="mt-2 px-4 py-3 border border-[var(--gold)]/30 focus-within:border-[var(--forest-deep)] transition-colors">
-                <CardElement onChange={() => setCardError(null)} options={CARD_ELEMENT_OPTIONS} />
+                <CardElement onChange={handleCardChange} options={CARD_ELEMENT_OPTIONS} />
               </div>
             </div>
 
@@ -641,7 +655,7 @@ function CheckoutForm() {
 
           <button
             type="submit"
-            disabled={!canPay || !stripe || processing}
+            disabled={!canPay || processing}
             className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-[var(--gold)] hover:bg-[var(--gold-soft)] text-[var(--gold-foreground)] eyebrow py-4 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {processing && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -656,7 +670,11 @@ function CheckoutForm() {
                     ? "Remove sold out items"
                     : hasSauceLimitIssue
                       ? "Adjust free sauces"
-                      : `Pay ${formatPrice(total)}`}
+                      : !detailsComplete
+                        ? "Complete your details"
+                        : !cardComplete
+                          ? "Enter card details"
+                          : `Pay ${formatPrice(total)}`}
           </button>
         </div>
       </aside>
