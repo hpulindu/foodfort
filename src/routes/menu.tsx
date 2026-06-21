@@ -6,6 +6,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Ornament } from "@/components/Ornament";
 import { MenuSkeleton } from "@/components/MenuSkeleton";
+import { MenuItemThumbnail } from "@/components/MenuItemThumbnail";
 import { ExtrasModal as ItemCustomizeModal } from "@/components/ExtrasModal";
 import { restaurant, type MenuItem, type MenuSection, type Sauce } from "@/lib/menu-data";
 import { fetchMenu, fetchSauces } from "@/lib/menu-api";
@@ -13,6 +14,12 @@ import { getExtrasFromMenu, isExtrasSection } from "@/lib/menu-config";
 import { getMenuItemDisplayPrice } from "@/lib/menu-item-options";
 import { addMenuItemOrCustomize } from "@/lib/menu-item-cart";
 import { useCart } from "@/lib/cart";
+import {
+  canAddStandaloneSauce,
+  getStandaloneSauceAllowance,
+  getStandaloneSauceLimitMessage,
+  standaloneSauceCartId,
+} from "@/lib/sauce-limits";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/menu")({
@@ -135,27 +142,15 @@ function MenuSections({
             {section.items.map((item) => {
               const id = `${section.id}-${item.name}`;
               const soldOut = !isAvailable(item.available);
-              const hasImage = Boolean(item.image);
               return (
                 <li
                   key={item.name}
-                  className={`py-6 lg:py-7 grid gap-4 sm:gap-6 items-center group ${
-                    hasImage
-                      ? "grid-cols-[auto_1fr_auto]"
-                      : "grid-cols-[1fr_auto]"
-                  } ${soldOut ? "opacity-60" : ""}`}
+                  className={`py-6 lg:py-7 grid grid-cols-[auto_1fr_auto] gap-4 sm:gap-6 items-center group ${
+                    soldOut ? "opacity-60" : ""
+                  }`}
                 >
-                  {hasImage && (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 shrink-0 overflow-hidden border border-[var(--gold)]/25 bg-[var(--forest)]/5">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className={hasImage ? "min-w-0" : undefined}>
+                  <MenuItemThumbnail name={item.name} image={item.image} />
+                  <div className="min-w-0">
                     <h3 className="font-display text-xl lg:text-2xl text-[var(--forest-deep)]">
                       {item.name}
                       {item.badge && <Badge kind={item.badge} />}
@@ -189,10 +184,12 @@ function MenuSections({
 }
 
 function SauceChip({ sauce }: { sauce: Sauce }) {
-  const { add } = useCart();
+  const { add, items } = useCart();
   const price = parseFloat(sauce.price);
   const isFree = !price;
   const soldOut = !isAvailable(sauce.available);
+  const addCheck = isFree ? canAddStandaloneSauce(items, sauce) : { ok: true as const };
+  const atLimit = isFree && !addCheck.ok;
 
   if (soldOut) {
     return (
@@ -208,37 +205,63 @@ function SauceChip({ sauce }: { sauce: Sauce }) {
 
   return (
     <button
+      type="button"
+      disabled={atLimit}
       onClick={() => {
+        const check = isFree ? canAddStandaloneSauce(items, sauce) : { ok: true as const };
+        if (!check.ok) {
+          toast.error(check.reason);
+          return;
+        }
+
         add({
-          id: `sauce-${sauce.name}`,
+          id: standaloneSauceCartId(sauce.name),
           name: `${sauce.name} Sauce`,
           baseName: `${sauce.name} Sauce`,
           price,
         });
         toast.success(`${sauce.name} sauce added`, { duration: 1500 });
       }}
-      aria-label={`Add ${sauce.name} sauce to cart`}
-      className="group flex items-center justify-between gap-3 border border-[var(--gold)]/30 hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 px-4 py-3 transition-colors text-left"
+      aria-label={
+        atLimit
+          ? `${sauce.name} sauce — complimentary limit reached`
+          : `Add ${sauce.name} sauce to cart`
+      }
+      className={`group flex items-center justify-between gap-3 border px-4 py-3 text-left transition-colors ${
+        atLimit
+          ? "cursor-not-allowed border-[var(--forest)]/15 bg-[var(--forest)]/[0.03] opacity-60"
+          : "cursor-pointer border-[var(--gold)]/30 hover:border-[var(--gold)] hover:bg-[var(--gold)]/5"
+      }`}
     >
       <span className="font-display text-lg text-[var(--forest-deep)]">{sauce.name}</span>
       <span className="flex items-center gap-2 whitespace-nowrap">
         <span className="eyebrow text-[0.65rem] text-[var(--forest)]/60">
           {isFree ? "Free" : `$${sauce.price}`}
         </span>
-        <Plus className="w-4 h-4 text-[var(--gold)] transition-transform group-hover:scale-125" />
+        <Plus
+          className={`w-4 h-4 text-[var(--gold)] ${
+            atLimit ? "" : "transition-transform group-hover:scale-125"
+          }`}
+        />
       </span>
     </button>
   );
 }
 
 function SaucesBlock({ sauces, isPending }: { sauces?: Sauce[]; isPending: boolean }) {
+  const { items } = useCart();
+  const { max, remaining } = getStandaloneSauceAllowance(items);
+
   return (
     <section id="sauces" className="scroll-mt-40 fade-up">
       <header className="flex items-baseline gap-6 mb-12">
         <span className="font-display text-3xl text-[var(--gold)]">★</span>
         <div className="flex-1">
           <h2 className="font-display text-[clamp(2rem,4vw,3rem)] text-[var(--forest-deep)]">Sauces</h2>
-          <p className="eyebrow text-[var(--forest)]/60 mt-2">Pick your favourites — tap to add</p>
+          <p className="eyebrow text-[var(--forest)]/60 mt-2">{getStandaloneSauceLimitMessage()}</p>
+          <p className="eyebrow text-[var(--forest)]/45 mt-1 text-[0.62rem] tracking-[0.22em]">
+            {remaining} of {max} complimentary {remaining === 1 ? "portion" : "portions"} remaining
+          </p>
         </div>
         <span className="hidden lg:block flex-1 h-px bg-[var(--gold)]/30 max-w-xs" />
       </header>

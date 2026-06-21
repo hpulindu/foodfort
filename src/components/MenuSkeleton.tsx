@@ -18,9 +18,10 @@ function SectionSkeleton({ rows }: { rows: number }) {
         {Array.from({ length: rows }).map((_, i) => (
           <li
             key={i}
-            className="py-6 lg:py-7 grid grid-cols-[1fr_auto] gap-4 sm:gap-6 items-center"
+            className="py-6 lg:py-7 grid grid-cols-[auto_1fr_auto] gap-4 sm:gap-6 items-center"
           >
-            <div className="space-y-3">
+            <Bar className="h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 shrink-0 rounded-none" />
+            <div className="space-y-3 min-w-0">
               <Bar className="h-6 w-48 max-w-[70%]" />
               <Bar className="h-3 w-96 max-w-[90%]" />
             </div>

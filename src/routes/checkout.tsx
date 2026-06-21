@@ -47,6 +47,7 @@ import {
   validateCheckoutDetails,
   type CheckoutField,
 } from "@/lib/checkout-validation";
+import { validateStandaloneSauceCart } from "@/lib/sauce-limits";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -169,6 +170,15 @@ function SoldOutBanner() {
   );
 }
 
+function SauceLimitBanner({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-3">
+      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+      <p>{message}</p>
+    </div>
+  );
+}
+
 function ClosedBanner({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-4">
@@ -274,7 +284,11 @@ function CheckoutForm() {
     [name, phone, email, notes, tableNo, orderType],
   );
 
-  const canPay = items.length > 0 && !hasSoldOutItems && storeOpen && !orderingPaused;
+  const sauceLimitIssue = useMemo(() => validateStandaloneSauceCart(items), [items]);
+  const hasSauceLimitIssue = !sauceLimitIssue.ok;
+
+  const canPay =
+    items.length > 0 && !hasSoldOutItems && !hasSauceLimitIssue && storeOpen && !orderingPaused;
 
   function markTouched(field: CheckoutField) {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
@@ -312,7 +326,9 @@ function CheckoutForm() {
     if (!result.ok) return;
 
     const { sanitized } = result;
-    if (items.length === 0 || hasSoldOutItems || !storeOpen || orderingPaused) return;
+    if (items.length === 0 || hasSoldOutItems || hasSauceLimitIssue || !storeOpen || orderingPaused) {
+      return;
+    }
 
     const cardEl = elements.getElement(CardElement);
     if (!cardEl) return;
@@ -580,6 +596,12 @@ function CheckoutForm() {
             </div>
           )}
 
+          {hasSauceLimitIssue && (
+            <div className="mb-4">
+              <SauceLimitBanner message={sauceLimitIssue.reason} />
+            </div>
+          )}
+
           <ul className="space-y-3 mb-6 max-h-[240px] overflow-y-auto pr-2">
             {items.map((item) => {
               const soldOut = soldOutIds.includes(item.id);
@@ -632,7 +654,9 @@ function CheckoutForm() {
                   ? "Currently closed"
                   : hasSoldOutItems
                     ? "Remove sold out items"
-                    : `Pay ${formatPrice(total)}`}
+                    : hasSauceLimitIssue
+                      ? "Adjust free sauces"
+                      : `Pay ${formatPrice(total)}`}
           </button>
         </div>
       </aside>

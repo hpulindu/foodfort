@@ -2,10 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { AlertCircle, ShoppingBag, X, Plus, Minus, Trash2 } from "lucide-react";
 import { useCart, formatPrice } from "@/lib/cart";
 import { getSoldOutCartItemIds } from "@/lib/menu-availability";
+import {
+  canIncreaseStandaloneSauceQty,
+  validateStandaloneSauceCart,
+} from "@/lib/sauce-limits";
 import { fetchOperationHours, getStoreClosedMessage, isStoreOpen } from "@/lib/operation-hours";
 import { fetchOrderingStatus, getOrderingPausedMessage } from "@/lib/ordering-status";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 
 export function CartButton({ onClick }: { onClick: () => void }) {
   const { count } = useCart();
@@ -93,6 +98,9 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
     };
   }, [open]);
 
+  const sauceLimitIssue = useMemo(() => validateStandaloneSauceCart(items), [items]);
+  const hasSauceLimitIssue = !sauceLimitIssue.ok;
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -170,9 +178,18 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                   <p>Some items are sold out. Remove them from your cart to continue checkout.</p>
                 </div>
               )}
+              {hasSauceLimitIssue && (
+                <div className="mb-4 flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 p-3">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{sauceLimitIssue.reason}</p>
+                </div>
+              )}
               <ul className="divide-y divide-[var(--gold)]/15">
                 {items.map((item) => {
                   const soldOut = soldOutIds.includes(item.id);
+                  const increaseCheck = canIncreaseStandaloneSauceQty(items, item.id);
+                  const canIncreaseQty = increaseCheck.ok;
+
                   return (
                     <li key={item.id} className={`py-5 flex gap-4 ${soldOut ? "opacity-70" : ""}`}>
                       <div className="flex-1">
@@ -201,9 +218,20 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                             </button>
                             <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
                             <button
-                              onClick={() => setQty(item.id, item.qty + 1)}
+                              onClick={() => {
+                                if (!canIncreaseQty) {
+                                  if (!increaseCheck.ok) toast.error(increaseCheck.reason);
+                                  return;
+                                }
+                                setQty(item.id, item.qty + 1);
+                              }}
                               aria-label="Increase quantity"
-                              className="w-8 h-8 flex items-center justify-center hover:bg-[var(--gold)]/10"
+                              disabled={!canIncreaseQty}
+                              className={`w-8 h-8 flex items-center justify-center ${
+                                canIncreaseQty
+                                  ? "hover:bg-[var(--gold)]/10"
+                                  : "opacity-40 cursor-not-allowed"
+                              }`}
                             >
                               <Plus className="w-3 h-3" />
                             </button>
@@ -245,6 +273,10 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             ) : hasSoldOutItems ? (
               <span className="block w-full text-center bg-[var(--forest-deep)]/50 text-[var(--cream)]/70 eyebrow py-4 cursor-not-allowed">
                 Remove sold out items
+              </span>
+            ) : hasSauceLimitIssue ? (
+              <span className="block w-full text-center bg-[var(--forest-deep)]/50 text-[var(--cream)]/70 eyebrow py-4 cursor-not-allowed">
+                Adjust free sauces
               </span>
             ) : (
               <Link

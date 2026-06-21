@@ -11,6 +11,10 @@ import {
 } from "./checkout-validation";
 import { assertStoreIsOpen } from "./operation-hours";
 import { assertOrderingNotPaused } from "./ordering";
+import {
+  getStandaloneFreeSauceExcess,
+  isStandaloneSauceLine,
+} from "./sauce-limits";
 
 export {
   blockPublicSignup,
@@ -415,9 +419,11 @@ export const createPaymentIntent = onCall(
 
     // Verify every cart item exists in the menu and recalculate subtotal
     let subtotal = 0;
+    let foodUnits = 0;
+    let freeStandaloneSauceUnits = 0;
     const verifiedItems: Array<{ id: string; name: string; price: number; qty: number }> = [];
     for (const item of data.items) {
-      const isSauce = item.id.startsWith("sauce-");
+      const isSauce = isStandaloneSauceLine(item.id);
       const lookupKey = isSauce
         ? item.id.slice("sauce-".length).toLowerCase().trim()
         : item.name.toLowerCase().trim();
@@ -430,10 +436,15 @@ export const createPaymentIntent = onCall(
           throw new HttpsError("invalid-argument", `"${item.name}" is currently sold out. Please refresh and try again.`);
         }
         const price = saucePriceMap.get(lookupKey) ?? 0;
+        if (price === 0) {
+          freeStandaloneSauceUnits += item.qty;
+        }
         subtotal += price * item.qty;
         verifiedItems.push({ id: item.id, name: item.name, price, qty: item.qty });
         continue;
       }
+
+      foodUnits += item.qty;
 
       const baseName = (item.baseName ?? item.name).toLowerCase().trim();
       const catalog = catalogMap.get(baseName);
@@ -499,6 +510,15 @@ export const createPaymentIntent = onCall(
       subtotal += unitPrice * item.qty;
       verifiedItems.push({ id: item.id, name: item.name, price: unitPrice, qty: item.qty });
     }
+
+    const freeSauceExcess = getStandaloneFreeSauceExcess(foodUnits, freeStandaloneSauceUnits);
+    if (freeSauceExcess > 0) {
+      throw new HttpsError(
+        "invalid-argument",
+        `Too many complimentary sauces in cart. Remove ${freeSauceExcess} free sauce${freeSauceExcess === 1 ? "" : "s"} and try again.`,
+      );
+    }
+
     subtotal = +subtotal.toFixed(2);
 
     // Calculate fees server-side
